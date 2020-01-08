@@ -46,6 +46,12 @@ if survey == "Sognefjorden":
    subStations = ["VT16", "VT179"]
    ```
 
+You run the toolbox after having editedt the settings in main with
+```
+python okokyst_processing.py
+```
+
+
 ### Examples
 Below is an example of temperature contour plot using this toolbox for Sørfjorden SOE72 for three years of monthly surveys:
 ![Sørfjorden SOE72](Figures/timeseries-SOE72-temp-20170331-to-20191209.png)
