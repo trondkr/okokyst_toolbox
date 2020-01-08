@@ -45,3 +45,5 @@ if survey == "Sognefjorden":
    basepath = "../OKOKYST_NS_Nord_Leon/"+str(CTDConfig.year)+"/"
    subStations = ["VT16", "VT179"]
    ```
+
+Example of temperature contour plot using this toolbox for Sørfjorden SOE72:
