@@ -6,15 +6,15 @@ import os, sys
 import matplotlib.cm as cmx
 import scipy.interpolate
 from shutil import copyfile
-from datetime import datetime
+import datetime
 
 # Local files
 import okokyst_ts_plot
 
 __author__ = 'Trond Kristiansen'
 __email__ = 'trond.kristiansen@niva.no'
-__created__ = datetime(2017, 2, 24)
-__modified__ = datetime(2019, 1, 8)
+__created__ = datetime.datetime(2017, 2, 24)
+__modified__ = datetime.datetime(2019, 1, 8)
 __version__ = "1.0"
 __status__ = "Development"
 
@@ -100,7 +100,7 @@ class Station(object):
             te = np.asarray(self.temperature[stationIndex].values)
             ox = np.asarray(self.oxygen[stationIndex].values)
             oxsat = np.asarray(self.oxsat[stationIndex].values)
-            sa=np.ma.masked_where(sa<0,sa)
+            sa=np.ma.masked_where(sa<=0,sa)
             te=np.ma.masked_where(te<-1.7,te)
         
             te_interp = scipy.interpolate.interp1d(de.values[0:len(te)], te, 
@@ -200,8 +200,6 @@ class Station(object):
           #  all_y.append(de.values)
           #  all_x.append(np.ones((len(de.values)))*self.julianDay[d])
           #  all_te.append(te)
-            sa=np.ma.masked_where(sa<0,sa)
-            te=np.ma.masked_where(te<-1.7,te)
         
             te_interp = scipy.interpolate.interp1d(de.values, te, 
                                                     fill_value=np.nan,
@@ -227,11 +225,12 @@ class Station(object):
                                                     fill_value=np.nan,
                                                     bounds_error=False,
                                                     kind="cubic")
+            
             sectionTE[d, :] = te_interp(Y)
             sectionSA[d, :] = sa_interp(Y)
             sectionOX[d, :] = ox_interp(Y)
             sectionFTU[d, :] = ftu_interp(Y)
-           
+            
             dateObject = num2date(self.julianDay[d], units=CTDConfig.refdate, calendar="standard")
             X[d] = self.julianDay[d]
 
@@ -258,16 +257,19 @@ class Station(object):
                 vmin = 0
                 vmax = 17
                 Z = sectionTE
+                Z=np.ma.masked_where(Z<-1.7,Z)
                 
             if varNames[i] == "salt":
-                vmin = 10
+                vmin = 5
                 vmax = 35
                 Z = sectionSA
+                Z=np.ma.masked_where(Z<0,Z)
                 
             if varNames[i] == "ftu":
                 vmin = 0
-                vmax = 4
+                vmax = 2
                 Z = sectionFTU
+                Z=np.ma.masked_where(Z>4,Z)
                 
             if varNames[i] == "oxy":
                 vmin = 0
@@ -275,7 +277,7 @@ class Station(object):
                 Z = sectionOX
                 Z=np.ma.masked_where(sectionOX>17,Z)
                 Z=np.ma.masked_where(sectionOX<0,Z)
-                
+            
             delta = (vmax - vmin) / 15
             levels = np.arange(vmin, vmax, delta)
             XX, YY = np.meshgrid(X,Y)
@@ -289,7 +291,7 @@ class Station(object):
            
             fig, ax = plt.subplots()
             CS = ax.contourf(XX,-YY,np.fliplr(np.rot90(Z, 3)), levels, vmin=vmin, vmax=vmax, extend="both")
-            CS2 = ax.contour(XX,-YY,np.fliplr(np.rot90(Z, 3)), levels, linewidths=0.05, colors='w')
+          #  CS2 = ax.contour(XX,-YY,np.fliplr(np.rot90(Z, 3)), levels, linewidths=0.05, colors='w')
             if float(maxDepth)>250:
                 ax.set_ylim(-250,0)
                 depthindex=np.where(Y==250)[0][0]

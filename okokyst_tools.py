@@ -1,6 +1,7 @@
-
-from numpy import sin, pi
 import os
+import datetime
+import numpy as np
+import gsw
 
 # Local files
 import stationClass
@@ -9,8 +10,8 @@ import okokyst_metadata
 
 __author__ = 'Trond Kristiansen'
 __email__ = 'trond.kristiansen@niva.no'
-__created__ = datetime(2017, 2, 24)
-__modified__ = datetime(2019, 1, 8)
+__created__ = datetime.datetime(2017, 2, 24)
+__modified__ = datetime.datetime(2019, 1, 8)
 __version__ = "1.0"
 __status__ = "Development"
 
@@ -19,7 +20,7 @@ def createNewFile(filename, station, CTDConfig):
     lines = infile.readlines()
     l = lines[0].split(";")
     options = None
-
+    
     if l[2] == "Cond." and len(l)==13:
         CTDConfig.conductivity_to_salinity = True
         CTDConfig.conductivityMissing = False
@@ -50,7 +51,8 @@ def createNewFile(filename, station, CTDConfig):
 
     if os.path.exists(newfilename):
         os.remove(newfilename)
-    print("=> Creating new output file: %s" % newfilename)
+    if CTDConfig.debug:
+        print("=> Creating new output file: %s" % newfilename)
     outfile = open(newfilename, 'a')
 
     outfile.writelines(station.header + station.mainHeader)
@@ -69,7 +71,7 @@ def createNewFile(filename, station, CTDConfig):
         # If only pressure is given, convert to depth in meters
         if CTDConfig.calculate_depth_from_pressure:
             P = float(l[8])
-            l[8]=okokyst_tools.pressure_to_depth(P,station.latitude)
+            l[8]=pressure_to_depth(P,station.latitude)
            
         line = ';'.join(map(str, l))
     
@@ -102,9 +104,9 @@ def pressure_to_depth(P, lat):
     g1 =  5.2788e-3
     g2 =  2.36e-5
 
-    rad = pi / 180.
+    rad = np.pi / 180.
 
-    X = sin(lat*rad)
+    X = np.sin(lat*rad)
     X = X*X
     grav = g0 * (1.0 + (g1 + g2*X)*X) + b*P
     nom = (a1 + (a2 + (a3 + a4*P)*P)*P)*P
@@ -117,6 +119,10 @@ def locateFile(basepath, subStation):
     if os.path.isfile(filename):
         return filename
 
+def locateDir(folder):
+    if os.path.isdir(folder):
+        return True
+    
 def findMaximumWindow(cast, tempName):
 
     maxDepth = np.max(cast[tempName].index.values)

@@ -16,6 +16,7 @@ from netCDF4 import date2num, num2date
 import pandas as pd
 from datetime import datetime
 import glob
+import progressbar
 
 # Local files
 import okokyst_map
@@ -29,10 +30,6 @@ __created__ = datetime(2017, 2, 24)
 __modified__ = datetime(2019, 1, 8)
 __version__ = "1.0"
 __status__ = "Development"
-
-def locateDir(folder):
-    if os.path.isdir(folder):
-        return True
     
 # ---------------------------------------------------
 # OKOKYST_TOOLBOX INFO:
@@ -61,7 +58,8 @@ def locateDir(folder):
 # Main function that calls ctd module and reads the individual SAIV data and stores each cast
 # as one station cast object in an array of stations.
 def qualityCheckStation(filename, dateObject, station, CTDConfig):
-    print("=> Opening input file: %s" % (filename))
+    if CTDConfig.debug:
+        print("=> Opening input file: %s" % (filename))
 
     cast, metadata = ctd.from_saiv(filename)
     downcast, upcast = cast.split()
@@ -127,7 +125,7 @@ def qualityCheckStation(filename, dateObject, station, CTDConfig):
         oxsat = oxsat.smooth(window_len=window_len, window='hanning')
         
         ftu = ftu.interpolate(method='linear')
-        ftu = ftu.smooth(window_len=window_len, window='hanning')
+        ftu = ftu.smooth(window_len=1, window='hanning')
 
         salinity = salinity.interpolate(method='linear')
         salinity = salinity.smooth(window_len=window_len, window='hanning')
@@ -139,7 +137,7 @@ def qualityCheckStation(filename, dateObject, station, CTDConfig):
         ftu = ftu.bindata(delta=delta, method='interpolate')
        
         df = pd.DataFrame(index=salinity.index, columns=["Depth", "Temperature", "Salinity", "Oxygen", "Oxsat", "FTU"])
-        df = df.fillna(0)
+       # df = df.fillna(0)
        # df = df.reset_index(drop=True)
         
         oxsat = oxsat.reset_index(drop=True)
@@ -149,6 +147,7 @@ def qualityCheckStation(filename, dateObject, station, CTDConfig):
         df["Oxygen"] = oxygen
         df["Oxsat"] = oxsat
         df["FTU"] = ftu
+      
         # Add data to station object for later
         station.addData(salinity, temperature, oxygen, oxsat, ftu, salinity.index,
                         date2num(dateObject, CTDConfig.refdate, calendar="standard"))
@@ -159,69 +158,61 @@ def createContourPlot(stationsList, CTDConfig, survey):
         station.createTimeSection(CTDConfig, survey)
 
 def main(surveys, months, CTDConfig):
+    
     for survey in surveys:
-
+        
         stationsList = []
         stationNamesList = []
 
         if survey == "Hardangerfjorden":
-            basepath = "../OKOKYST_NS_Nord_Kvitsoy/"+str(CTDConfig.year)+"/"
+            basepath = "/Users/trondkr/Dropbox/ØKOKYST_NORDSJØENNORD_CTD/Hardangerfjorden/"
             subStations = ["VT70", "VT69", "VT74", "VT53", "VT52", "VT75"]
-            #subStations = ["VT75"]
-
+           # subStations = ["VT75"]
+                         
         if survey == "MON":
             basepath = "/Users/trondkr/Dropbox/MON-data/CONVERTED/"
             subStations = ['NORD1','OFOT1','NORD2', 'OFOT2','OKS1','OKS2',
                            'SAG1','SAG2','SJON1','SJON2','TYS1','TYS2']
-          
-            subStations = ['OKS2']
             
         if survey == "Sognefjorden":
-            basepath = "../OKOKYST_NS_Nord_Leon/"+str(CTDConfig.year)+"/"
-            subStations = ["VT16", "VT179"]
+            basepath = "/Users/trondkr/Dropbox/ØKOKYST_NORDSJØENNORD_CTD/Sognefjorden/"
+            subStations = ["VT79","VT16"]
 
         if survey == "Soerfjorden":
-            if CTDConfig.year=="2017":
-                basepath = "/Users/trondkr/Dropbox/NIVA/Soerfjorden_Report_2018/CTD_data_Soerfjorden_2017/"
-            if CTDConfig.year=="2018":
-                basepath = "/Users/trondkr/Dropbox/SoerfjordenData2018/"
-            if CTDConfig.year=="2019":
-                basepath = "/Users/trondkr/Dropbox/Sorfjorden_2017_2019/"
-            
+            basepath = "/Users/trondkr/Dropbox/Sorfjorden_2017_2019/"
             subStations = ["SOE72", "Lind1", "S22","S16","SOE10"]
 
         subdirectories = sorted(os.listdir(basepath))
 
+       # pbar = progressbar.ProgressBar(widgets=[progressbar.Percentage(), progressbar.Bar()], maxval=len(subdirectories)).start()
+        pbar = progressbar.ProgressBar(max_value=len(subdirectories), redirect_stdout=True).start()
+        
         for subStation in subStations:
             station = stationClass.Station(subStation, survey)
             stationsList.append(station)
 
-            print("\n{}\nAdding station to list {}".format(survey, stationsList))
-            for folder in subdirectories:
-                # Required folder structure of CTD data:
-                # "../2017-MM-DD/2017-MM-DD CTD Data"
-
-                if survey in ["Hardangerfjorden","Sognefjorden","Soerfjorden","MON"]:
-                    if locateDir(basepath + folder):
-                        dirLevel2 = basepath + folder + "/" + folder + " CTD data"
-                        if locateDir(dirLevel2):
-                            dateObject = datetime(int(folder[0:4]), int(folder[5:7]), int(folder[8:10]))
-                            strmonth = str(dateObject.strftime("%b"))
-
-                            if strmonth in months:
-                            #   print("=> Identified correct folder: {} for month {}".format(dirLevel2, strmonth))
-
-                                filename = okokyst_tools.locateFile(dirLevel2, subStation)
+            print("\n{}\nAdding station to list {}".format(survey, subStation))
+            for i, folder in enumerate(subdirectories):
+                pbar.update(i+1)
+                if okokyst_tools.locateDir(basepath + folder):
+                    dirLevel2 = basepath + folder + "/" + folder + " CTD data"
+                    if okokyst_tools.locateDir(dirLevel2):
+                        dateObject = datetime(int(folder[0:4]), int(folder[5:7]), int(folder[8:10]))
+                        strmonth = str(dateObject.strftime("%b"))
+                       
+                        if strmonth in months:
+                            filename = okokyst_tools.locateFile(dirLevel2, subStation)
+                            if CTDConfig.debug:
                                 print("=> Identified correct file: {} for month {}".format(filename, strmonth))
 
-                                if filename != None:    
-                                    bb = os.path.basename(filename)
-                                    filestation = os.path.splitext(bb)
+                            if filename != None:    
+                                bb = os.path.basename(filename)
+                                filestation = os.path.splitext(bb)
 
-                                    if filestation[0] in subStations:
-                                        newfilename = okokyst_tools.createNewFile(filename, station, CTDConfig)
-                                        qualityCheckStation(newfilename, dateObject, station, CTDConfig)
-                               
+                                if filestation[0] in subStations:
+                                    newfilename = okokyst_tools.createNewFile(filename, station, CTDConfig)
+                                    qualityCheckStation(newfilename, dateObject, station, CTDConfig)
+        pbar.finish()
         for st in stationsList:
           #  st.describeStation(CTDConfig)
             if CTDConfig.createTSPlot:
@@ -243,21 +234,22 @@ if __name__ == "__main__":
     surveys = ["MON"]
     surveys = ["Soerfjorden"]
     
-   # surveys = ["Hardangerfjorden"]
+    surveys = ["Hardangerfjorden","Sognefjorden"]
+    surveys = ["Hardangerfjorden"]
 
     months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov","Dec"]
-   # months = ["May"]
+ 
     year = "2019"
 
     # NOTE: make sure the function "addStationMeadata" is up to date with info
 
     CTDConfig = CTDConfig.CTDConfig(createStationPlot=True,
-                                    createTSPlot=True,
+                                    createTSPlot=False,
                                     createContourPlot=True,
                                     binDataWriteToNetCDF=False,
                                     showStats=False,
                                     plotStationMap=True,
-                                    useDowncast=False,
+                                    useDowncast=True,
                                     tempName='Temp',
                                     saltName='Salinity',
                                     oxName='OxMgL',
@@ -265,7 +257,8 @@ if __name__ == "__main__":
                                     oxsatName='OptOx',
                                     refdate="seconds since 1970-01-01:00:00:00",
                                     year=year,
-                                    conductivity_to_salinity=False)
+                                    conductivity_to_salinity=False,
+                                    debug=False)
 
     kw = dict(compression=None)
     kw.update(below_water=True)

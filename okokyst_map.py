@@ -2,9 +2,17 @@ import matplotlib
 from mpl_toolkits.basemap import Basemap
 import matplotlib.pyplot as plt
 from mpl_toolkits.axes_grid1.inset_locator import inset_axes
-#from matplotlib.patches import Polygon
+from matplotlib.patches import Polygon
 import os
 import numpy as np
+import datetime
+
+__author__ = 'Trond Kristiansen'
+__email__ = 'trond.kristiansen@niva.no'
+__created__ = datetime.datetime(2017, 2, 24)
+__modified__ = datetime.datetime(2019, 1, 8)
+__version__ = "1.0"
+__status__ = "Development"
 
 def map_limits(m):
     llcrnrlon = min(m.boundarylons)
@@ -20,6 +28,16 @@ def make_map(survey, llcrnrlon=12.8, urcrnrlon=17.5, llcrnrlat=66.2, urcrnrlat=6
         mmap = Basemap(llcrnrlon=6.4, urcrnrlon=6.85, llcrnrlat=60, urcrnrlat=60.2, projection=projection,
                        resolution=resolution)
         meridians = np.arange(6.3, 6.7, 0.1)
+        parallels = np.arange(60.1, 60.5, 0.1)
+    elif survey == "Hardangerfjorden":
+        mmap = Basemap(llcrnrlon=5.0, urcrnrlon=6.2, llcrnrlat=60.5, urcrnrlat=61.5, projection=projection,
+                       resolution=resolution)
+        meridians = np.arange(5.0, 6.7, 0.1)
+        parallels = np.arange(60.1, 61.5, 0.1)
+    elif survey == "Sognefjorden":
+        mmap = Basemap(llcrnrlon=6.0, urcrnrlon=6.85, llcrnrlat=59.7, urcrnrlat=60.2, projection=projection,
+                       resolution=resolution)
+        meridians = np.arange(6.0, 6.7, 0.1)
         parallels = np.arange(60.1, 60.5, 0.1)
     else:
         mmap = Basemap(llcrnrlon=llcrnrlon, urcrnrlon=urcrnrlon,

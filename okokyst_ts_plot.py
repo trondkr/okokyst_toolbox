@@ -3,20 +3,19 @@ import numpy as np
 import matplotlib.pyplot as plt
 import seawater as sw
 import cmocean
-
 import datetime
 from netCDF4 import Dataset
 import matplotlib.cm as cm
 import calendar
 import os, string
+import numpy as np
 
 __author__ = 'Trond Kristiansen'
 __email__ = 'trond.kristiansen@niva.no'
 __created__ = datetime.datetime(2017, 2, 24)
-__modified__ = datetime.datetime(2017, 2, 24)
+__modified__ = datetime.datetime(2019, 1, 8)
 __version__ = "1.0"
 __status__ = "Development"
-
 
 def help():
     """ This script creates a TS plot of temperature and salinity data. Colored with
@@ -51,8 +50,8 @@ def createTS(salt, temp, depth, stationName, survey):
                     cmap='RdYlBu', zorder=10)
     plt.colorbar(CS)
 
-    ax.set_ylim(tmin, tmax)
-    ax.set_xlim(smin, smax)
+   # if (smin!=np.nan and smax!=np.nan):
+   #     ax.set_xlim(smin, smax)
 
     ax.set_title(r"$\theta$-S - %s" % (stationName))
     if not os.path.exists('figures/{}'.format(survey)):

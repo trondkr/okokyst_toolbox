@@ -1,7 +1,8 @@
 class CTDConfig(object):
 
     def __init__(self, createStationPlot, createTSPlot,createContourPlot, binDataWriteToNetCDF, showStats, plotStationMap, useDowncast, tempName, saltName,
-                 oxName, ftuName, oxsatName, refdate, year, conductivity_to_salinity=False,calculate_depth_from_pressure=False):
+                 oxName, ftuName, oxsatName, refdate, year, conductivity_to_salinity=False,calculate_depth_from_pressure=False,
+                 debug=False):
         self.createStationPlot = createStationPlot
         self.createTSPlot = createTSPlot
         self.createContourPlot = createContourPlot
@@ -18,3 +19,4 @@ class CTDConfig(object):
         self.year = year
         self.calculate_depth_from_pressure = calculate_depth_from_pressure
         self.conductivity_to_salinity = conductivity_to_salinity
+        self.debug=debug

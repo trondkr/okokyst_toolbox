@@ -101,8 +101,8 @@ def addStationMeadata(station, CTDConfig, options = None):
             station.header = "STATION;VT16;Kyrkjeboe;61.14600;5.9527\n"
             station.longitude = 5.9527
             station.latitude = 61.14600
-        if station.name == "VT179":
-            station.header = "STATION;VT179;Naersnes;60.9963;7.0556\n"
+        if station.name == "VT79":
+            station.header = "STATION;VT79;Naersnes;60.9963;7.0556\n"
             station.longitude = 7.0556
             station.latitude = 60.9963
 
