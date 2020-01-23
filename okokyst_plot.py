@@ -7,8 +7,8 @@ def plotStation(station, dateObject):
     # Plotting
     kw_temp = dict(linestyle='-', color='#6699cc', linewidth=4, label=r"Temperature [$^\circ$C]")
     kw_salt = dict(linestyle='-', color='#ffcc33', alpha=0.8, linewidth=4, label=r"Salinity [psu]")
-    kw_oxy = dict(linestyle='-', color='#339933', alpha=0.9, linewidth=4, label=r"Oxygen [mg/L]")
-    kw_ftu = dict(linestyle='-', color='#669933', alpha=0.9, linewidth=4, label=r"FTU")
+    kw_oxy = dict(linestyle='-', color='#339933', alpha=0.9, linewidth=4, label=r"Oxygen [ml/L]")
+    kw_ftu = dict(linestyle='-', color='#669933', alpha=0.9, linewidth=4, label=r"Fluorescence")
     
     fig, ax = plt.subplots() #station.temperature.plot(**kw_temp)
    # ax.plot(station.temperature, station.depth, **kw_oxy)
@@ -17,7 +17,7 @@ def plotStation(station, dateObject):
 
     ax2 = ax.twiny()
     ax2.plot(station.salinity, station.depth, **kw_salt)
-    ax.set_xlabel("Temp[$^\circ$C] & Oxygen [$mg/L$]")
+    ax.set_xlabel("Temp[$^\circ$C] & Oxygen [$ml/L$]")
     ax2.set_xlabel("Salinity [psu]")
     ax.set_ylabel("Depth [m]")
     ax.legend(loc="lower left", prop={'size': 6})

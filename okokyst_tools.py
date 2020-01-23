@@ -4,7 +4,7 @@ import numpy as np
 import gsw
 
 # Local files
-import stationClass
+from station.station_class import Station
 import ctdConfig as CTDConfig
 import okokyst_metadata
 
