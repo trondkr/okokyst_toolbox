@@ -15,7 +15,7 @@ import pandas as pd
 from datetime import datetime
 import glob
 import progressbar
-import ferryBoxStationClass
+import ferryBoxStationClass as fb
 
 from datetime import datetime, timedelta
 from pyniva import Vessel, TimeSeries, token2header
@@ -64,31 +64,42 @@ def get_list_of_available_timeseries_for_vessel(vessel_name,vessel_abbreviation)
 
             if len(int_ts) > 0:
                 data = TimeSeries.get_timeseries_list(tsb_host, int_ts,
-                                                    start_time=datetime.utcnow() - timedelta(380),
+                                                    start_time=datetime.utcnow() - timedelta(120),
                                                     end_time=datetime.utcnow(),
                                                     name_headers=True,
                                                     header=header,
                                                     noffill=True,dt=0)
-                print(data, "\n")
+  
+    return data
 
 def get_data_around_station(df,st_lon,st_lat,dist):
+    # https://stackoverflow.com/questions/21415661/logical-operators-for-boolean-indexing-in-pandas
     # Filter out the longitude and latitudes surrounding the station lat/lon
-    return df.sel((st_lat-dist < df.lat < st_lat+dist) and (st_lon-dist < df.lon < st_lon+dist))
+    return df[(st_lat-dist < df['latitude']) & (df['latitude']< st_lat+dist) & (st_lon-dist < df['longitude']) & (df['longitude']< st_lon+dist)]
      
-def create_stations(df):
-    
-    station_lons=[12.3]
-    station_lats=[67.6]
-    station_names=['test']
+def create_station(stationid,df):
+
+    metadata=ferrybox_metadata(stationid)
     dist=0.1
     
-    for st_lon,st_lat,st_name in enumerate(station_lons,station_lats,station_names):
-        # Get the data for the station
-        df_st=get_data_around_station(df,st_lon,st_lat,dist)
-        # Create the station 
-        station=FerryBoxStation(st_name,st_lon,st_lat,df_st)
+    # Get the data for the station
+    df_st=get_data_around_station(df,metadata['longitude'],metadata['latitude'],dist)
+    
+    # Create the station 
+    station=fb.FerryBoxStation(metadata,df_st)
          
-
+def ferrybox_metadata(staionid):
+    return {'VT4':{'name':'Hurum', 'latitude':59.59,'longitude':10.64,'vessel':'FA'},
+            'VT12':{'name':'Sognesjøen', 'latitude':60.9804,'longitude':4.7568,'vessel':'TF'},
+            'VT72':{'name':'Herøyfjorden/Røyrasundet', 'latitude':62.3066,'longitude':5.5877,'vessel':'TF'},
+            'VT80':{'name':'Frohavet', 'latitude':63.76542,'longitude':9.52296,'vessel':'TF'},
+            'VT45':{'name':'Trondheimsfjorden - Agdenes', 'latitude':63.65006,'longitude':9.77012,'vessel':'TF'},
+            'VT22':{'name':'Trondheimsfjorden', 'latitude':63.46,'longitude':10.3,'vessel':'TF'},
+            'VT23':{'name':'Trondheimsleia - Hemneskjela', 'latitude':63.45737,'longitude':8.85324,'vessel':'TF'},
+            'VT76':{'name':'Bøkfjorden-ytre', 'latitude':69.82562,'longitude':30.11961,'vessel':'TF'},
+            'VR23':{'name':'Blodskytodden - Vardø fyr', 'latitude':70.4503,'longitude':31.0031,'vessel':'TF'},
+            'VR25':{'name':'Vardnesodden - Kjølnes', 'latitude':70.98425,'longitude':28.78323,'vessel':'TF'}}[stationid]   
+                 
 def create_contour_station(station):
     xticklabels = []
     yticklabels = []
@@ -148,16 +159,10 @@ def create_contour_station(station):
                             dateObjectStart=dateObjectStart,
                             dateObjectEnd=dateObjectEnd)
     
-def open_mat_file(filename):
 
-    from scipy.io import loadmat
-    x = loadmat(filename)
-    print(x)
-    lon = x['lon']
-    lat = x['lat']
-   
+substations=['VT12','VT72','VT80','VT45','VT22','VT23','VT76','VR23','VR25']
+tsbdata = get_list_of_available_timeseries_for_vessel('MS Trollfjord','TF')
 
-filename='../FBdata/TF2018.mat'
-#open_mat_file(filename)
-
-get_list_of_available_timeseries_for_vessel('MS Trollfjord','TF')
+for stationid in substations:
+    print('Creating station for {}'.format(stationid))
+    create_station(stationid,tsbdata)

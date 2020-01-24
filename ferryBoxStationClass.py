@@ -22,11 +22,15 @@ __version__ = "1.0"
 __status__ = "Development"
     
 
-class FerryBoxStastion:
+class FerryBoxStation:
 
-    def __init__(name,lon,lat,df_st):
-        self.lon=lon
-        self.lat=lat
-        self.name=name
+    def __init__(self,metadata,df_st):
+        self.lon=metadata['longitude']
+        self.lat=metadata['latitude']
+        self.name=metadata['name']
         self.df_st=df_st
+        self.description()
+        
+    def description(self):
+        print('=> Station {} created at (lat,lon) ({},{})'.format(self.name,self.lon,self.lat))
         
