@@ -5,16 +5,15 @@ class CTDConfig(object):
                  createContourPlot, 
                  createTimeseriesPlot, 
                  binDataWriteToNetCDF, 
+                 describeStation,
                  showStats, 
                  plotStationMap, 
-                 useDowncast, 
                  tempName, 
                  saltName,
                  oxName, 
                  ftuName, 
                  oxsatName, 
                  refdate, 
-                 projectname,
                  selected_depths,
                  write_to_excel, 
                  survey=None, 
@@ -27,9 +26,10 @@ class CTDConfig(object):
         self.createContourPlot = createContourPlot
         self.createTimeseriesPlot = createTimeseriesPlot
         self.binDataWriteToNetCDF = binDataWriteToNetCDF
+        self.describeStation = describeStation
         self.showStats = showStats
         self.plotStationMap = plotStationMap
-        self.useDowncast = useDowncast
+        self.useDowncast = None
         self.tempName = tempName
         self.saltName = saltName
         self.oxName = oxName
@@ -41,6 +41,6 @@ class CTDConfig(object):
         self.debug=debug
         self.survey=survey
         self.write_to_excel=write_to_excel
-        self.projectname=projectname
+        self.projectname=None
         self.selected_depths=selected_depths
         self.mgperliter_to_mlperliter=0.7
