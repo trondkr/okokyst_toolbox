@@ -51,8 +51,8 @@ def make_map(survey, llcrnrlon=12.8, urcrnrlon=17.5, llcrnrlat=66.2, urcrnrlat=6
     mmap.drawcoastlines()
     mmap.fillcontinents(color='0.85')
 
-    mmap.drawparallels(parallels, linewidth=0, labels=[1, 0, 0, 0],fontsize=10)
-    mmap.drawmeridians(meridians, linewidth=0, labels=[0, 0, 0, 1],fontsize=10)
+    mmap.drawparallels(parallels, linewidth=0, labels=[1, 0, 0, 0],fontsize=9)
+    mmap.drawmeridians(meridians, linewidth=0, labels=[0, 0, 0, 1],fontsize=9, rotation=45)
     mmap.ax = ax
 
     if inset:
@@ -85,16 +85,25 @@ def make_map(survey, llcrnrlon=12.8, urcrnrlon=17.5, llcrnrlat=66.2, urcrnrlat=6
 def createMap(stationsList):
     lons = []
     lats = []
+    names = []
     for station in stationsList:
         lons.append(station.longitude)
         lats.append(station.latitude)
+        names.append(station.name)
 
     print("=> Creating station map")
     # Stations map.
     if not os.path.exists('figures/{}'.format(stationsList[0].survey)):
         os.mkdir('figures/{}'.format(stationsList[0].survey))
     fig, mmap = make_map(stationsList[0].survey, figsize=(6, 6))
-    mmap.plot(lons, lats, marker='o', markersize=8, c='r', linestyle="None", latlon=True)
+    mmap.plot(lons, lats, marker='o', markersize=10, edgecolor='k', c='r', lw=0.1, linestyle="None", latlon=True)
+
+    x, y = mmap(lons, lats)
+    for i in range(len(names)):
+        print("Adding name for station {}".format(names[i]))
+        bbox_props = dict(boxstyle="round,pad=0.1", fc="w", ec="r", lw=1)
+        mmap.ax.annotate(names[i], xy=(x[i], y[i]), va="top", fontsize=8, bbox=bbox_props)
+
     plotfileName = "figures/{}/{}-stations.png".format(stationsList[0].survey,stationsList[0].survey)
 
     if os.path.exists(plotfileName): os.remove(plotfileName)

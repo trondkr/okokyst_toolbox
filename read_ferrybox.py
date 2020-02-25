@@ -37,7 +37,7 @@ def setup_connection_to_nivadb():
     return token2header(token)
 
 
-def get_list_of_available_timeseries_for_vessel(vessel_name, vessel_abbreviation, start_date, end_date):
+def get_list_of_available_timeseries_for_vessel(vessel_name, vessel_abbreviation, start_date, end_date, variable):
     header = setup_connection_to_nivadb()
     meta_host = "https://api-test.niva.no/v1/metaflow/"
     tsb_host = "https://api-test.niva.no/v1/tsb/"
@@ -53,10 +53,21 @@ def get_list_of_available_timeseries_for_vessel(vessel_name, vessel_abbreviation
           #  for s in signals:
           #       print(s.path)
 
-            interesting_signals = ["{}/ferrybox/CHLA_FLUORESCENCE/BIOF_CORR_AND_CALIB".format(vessel_abbreviation),
-                                   #   "{}/ferrybox/CHLA_FLUORESCENCE/RAW".format(vessel_abbreviation),
-                                   #   "{}/ferrybox/CHLA_FLUORESCENCE".format(vessel_abbreviation),
-                                   "{}/gpstrack".format(vessel_abbreviation)]
+            if variable == 'temperature':
+                db_path = "{}/ferrybox/CTD/TEMPERATURE".format(vessel_abbreviation)
+            elif variable == 'salinity':
+                db_path = "{}/ferrybox/CTD/SALINITY".format(vessel_abbreviation)
+            elif variable == 'chla_fluorescence':
+                db_path = "{}/ferrybox/CHLA_FLUORESCENCE/BIOF_CORR_AND_CALIB".format(vessel_abbreviation)
+            elif variable == 'cdom_fluorescence':
+                db_path = "{}/ferrybox/CDOM_FLUORESCENCE/ADJUSTED".format(vessel_abbreviation)
+            elif variable == 'turbidity':
+                db_path = "{}/ferrybox/TURBIDITY".format(vessel_abbreviation)
+            else:
+                db_path = "{}/ferrybox/CHLA_FLUORESCENCE/BIOF_CORR_AND_CALIB".format(vessel_abbreviation)
+
+            interesting_signals = [db_path, "{}/gpstrack".format(vessel_abbreviation)]
+
             int_ts = [ts for sn in interesting_signals
                       for ts in signals if sn in ts.path]
             for ts in int_ts:
@@ -70,7 +81,6 @@ def get_list_of_available_timeseries_for_vessel(vessel_name, vessel_abbreviation
                                                       header=header,
                                                       noffill=True,
                                                       dt=0)
-
     return data
 
 
@@ -83,16 +93,14 @@ def get_data_around_station(df, st_lon, st_lat, dist):
                     df['longitude'] < st_lon + 2 * dist)]
 
 
-def create_station(stationid, df):
+def create_station(stationid, df, varname, dist):
     metadata = ferrybox_metadata(stationid)
-    dist = 0.1
 
     # Get the data for the station
     df_st = get_data_around_station(df, metadata['longitude'], metadata['latitude'], dist)
 
     # Create the station 
-    return fb.FerryBoxStation(stationid, metadata, df_st)
-
+    return fb.FerryBoxStation(stationid, metadata, df_st, varname)
 
 def ferrybox_metadata(staionid):
     return \
@@ -101,7 +109,7 @@ def ferrybox_metadata(staionid):
      'VT12': {'name': 'Sognesjøen', 'latitude': 60.9804, 'longitude': 4.7568,
               'vessel': 'TF',
               'vessel_name': 'MS Trollfjord'},
-     'VT72': {'name': 'Herøyfjorden', 'latitude': 62.3066, 'longitude': 5.5877,
+     'VT72': {'name': 'Herøyfjorden og VT71:Skinnbrokleia', 'latitude': 62.3066, 'longitude': 5.5877,
               'vessel': 'TF',
               'vessel_name': 'MS Trollfjord'},
      'VT80': {'name': 'Djupfest', 'latitude': 63.76542, 'longitude': 9.52296,
@@ -124,12 +132,23 @@ def ferrybox_metadata(staionid):
               'vessel_name': 'MS Trollfjord'},
      'VR25': {'name': 'Tanafjorden ytre', 'latitude': 70.98425, 'longitude': 28.78323,
               'vessel': 'TF',
-              'vessel_name': 'MS Trollfjord'}}[stationid]
+              'vessel_name': 'MS Trollfjord'},
+     'VR51': {'name': 'Korsen', 'latitude': 62.0944, 'longitude': 7.0061,
+              'vessel': 'TF',
+              'vessel_name': 'MS Trollfjord'},
+     'VR31': {'name': 'Tilremsfjorden', 'latitude': 65.6009, 'longitude': 12.2354,
+              'vessel': 'TF',
+              'vessel_name': 'MS Trollfjord'}
+     }[stationid]
 
 
 # MAIN 
 
-substations = ['VT4', 'VT12','VT72', 'VT80', 'VT45', 'VT22', 'VT23', 'VT76', 'VR23', 'VR25']
+substations = ['VT4', 'VT12','VT72', 'VT80', 'VT45', 'VT22', 'VT23', 'VT76', 'VR23', 'VR25','VR51','VR31']
+#substations=['VR31']
+varnames=['temperature','salinity','cdom_fluorescence','turbidity','chla_fluorescence']
+varnames=['temperature','salinity']
+dist = 0.1
 
 start_date = datetime(2019, 1, 1)
 end_date = datetime(2019, 12, 31)
@@ -138,17 +157,19 @@ end_date = datetime(2019, 12, 31)
 
 # NO EDIT
 
-for stationid in substations:
-    metadata = ferrybox_metadata(stationid)
-    print('Creating station for {} using vessel {}'.format(stationid, metadata['vessel_name']))
-    tsbdata = get_list_of_available_timeseries_for_vessel(metadata['vessel_name'],
-                                                          metadata['vessel'],
-                                                          start_date,
-                                                          end_date)
+for varname in varnames:
+    for stationid in substations:
+        metadata = ferrybox_metadata(stationid)
+        print('Creating station for {} using vessel {} and variable {}'.format(stationid,metadata['vessel_name'],varname))
+        tsbdata = get_list_of_available_timeseries_for_vessel(metadata['vessel_name'],
+                                                              metadata['vessel'],
+                                                              start_date,
+                                                              end_date,
+                                                              varname)
 
-    station = create_station(stationid, tsbdata)
-    station.start_date_jd = date2num(start_date, units=station.refdate, calendar="standard")
-    station.end_date_jd = date2num(end_date, units=station.refdate, calendar="standard")
+        station = create_station(stationid,tsbdata,varname,dist)
+        station.start_date_jd = date2num(start_date, units=station.refdate, calendar="standard")
+        station.end_date_jd = date2num(end_date, units=station.refdate, calendar="standard")
 
-    print('Creating contour plot for {}'.format(stationid))
-    station.create_station_contour_plot()
+        print('Creating contour plot for {}'.format(stationid))
+        station.create_station_contour_plot()

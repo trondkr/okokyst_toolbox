@@ -63,14 +63,17 @@ def qualityCheckStation(filename, dateObject, station, CTDConfig):
 
     cast, metadata = ctd.from_saiv(filename)
     downcast, upcast = cast.split()
+    if station.name in ["OKS2"] and dateObject.year==2019:
+        upcast=downcast
+
     if (not downcast.empty and CTDConfig.useDowncast) or (not upcast.empty and not CTDConfig.useDowncast):
-      
         if CTDConfig.useDowncast:
-       
-            downcast['dz/dtM'] = movingaverage(downcast['dz/dtM'], window_size=2)
-            downcast['dz/dtM'] = downcast['dz/dtM'].fillna(0)
+            downcast_copy=downcast.copy()
+
+            downcast_copy['dz/dtM'] = movingaverage(downcast['dz/dtM'], window_size=2)
+            downcast['dz/dtM'].loc[downcast_copy['dz/dtM'] == np.nan].fillna(0)
             downcast['dz/dtM'].replace([np.inf, -np.inf], 0.5)
-          
+
             downcast = downcast[downcast['dz/dtM'] >= 0.1]  # Threshold velocity.
             window = okokyst_tools.findMaximumWindow(downcast, CTDConfig.tempName)
             window=10
@@ -117,20 +120,20 @@ def qualityCheckStation(filename, dateObject, station, CTDConfig):
                 print("=> STATS FOR DOWNCAST OXYGEN at %s:\n %s" % (station.name, downcast[[CTDConfig.oxName]].describe()))
                 print("=> STATS FOR DOWNCAST FTU at %s:\n %s" % (station.name, downcast[[CTDConfig.ftuName]].describe()))
         else:
-           
+
             upcast['dz/dtM'] = movingaverage(upcast['dz/dtM'], window_size=2)
         #    upcast['dz/dtM'] = upcast['dz/dtM'].fillna(0)
             upcast['dz/dtM'] = upcast['dz/dtM'].replace([np.inf, -np.inf], 0.5)
             upcast = upcast[upcast['dz/dtM'] >= 0.1]  # Threshold velocity.
 
             window = okokyst_tools.findMaximumWindow(upcast, CTDConfig.tempName)
-          
+
             temperature = upcast[CTDConfig.tempName].despike(n1=1, n2=20, block=window)
             salinity = upcast[CTDConfig.saltName].despike(n1=1, n2=20, block=window)
             oxygen = upcast[CTDConfig.oxName].despike(n1=1, n2=20, block=window)
             oxsat = upcast[CTDConfig.oxsatName].despike(n1=1, n2=20, block=window)
             ftu = upcast[CTDConfig.ftuName].despike(n1=2, n2=10, block=window)
-    
+
             if CTDConfig.showStats:
                 print("=> STATS FOR UPCAST TEMP at %s:\n %s" % (station.name, upcast[[CTDConfig.tempName]].describe()))
                 print("=> STATS FOR UPCAST SALT at %s:\n %s" % (station.name, upcast[[CTDConfig.saltName]].describe()))
@@ -218,9 +221,6 @@ def main(surveys, months, CTDConfig):
             stationid = ["62215","62216","62217","62218","62219","62220",
                          "62221","62222","62223","62224","68577","68578"]
 
-            subStations = ['OKS2']
-            stationid=["62224"]
-
             projectid = '5482'
             method = 'AkvaplanNIVA'
             projectname = 'Marin overvåking Nordland'
@@ -241,7 +241,7 @@ def main(surveys, months, CTDConfig):
             projectname = 'OKOKYST Nordsjoen Nord'
             subStations = ["VT70", "VT69", "VT74", "VT53", "VT52", "VT75"]
             stationid = ["68910", "68908", "68913", "68911", "69164", "69165"]
-          #  subStations = ["VT69"]
+
         if CTDConfig.survey == "Sognefjorden":
             basepath = "/Users/trondkr/Dropbox/ØKOKYST_NORDSJØENNORD_CTD/Sognefjorden/"
             projectid = '10526'
@@ -252,7 +252,6 @@ def main(surveys, months, CTDConfig):
         
         subdirectories = sorted(os.listdir(basepath))
 
-       # pbar = progressbar.ProgressBar(widgets=[progressbar.Percentage(), progressbar.Bar()], maxval=len(subdirectories)).start()
         pbar = progressbar.ProgressBar(max_value=len(subdirectories), redirect_stdout=True).start()
         
         for sub_index,subStation in enumerate(subStations):
@@ -286,6 +285,7 @@ def main(surveys, months, CTDConfig):
             if CTDConfig.describeStation:
                 st.describeStation(CTDConfig)
             if CTDConfig.createTSPlot:
+                print(survey)
                 st.plotStationTS(survey)
 
             if CTDConfig.binDataWriteToNetCDF:
@@ -325,12 +325,12 @@ if __name__ == "__main__":
         
     CTDConfig = CTDConfig.CTDConfig(createStationPlot=False,
                                     createTSPlot=False,
-                                    createContourPlot=True,
+                                    createContourPlot=False,
                                     createTimeseriesPlot=False,
                                     binDataWriteToNetCDF=False,
                                     describeStation=False,
                                     showStats=False,
-                                    plotStationMap=False,
+                                    plotStationMap=True,
                                     tempName='Temp',
                                     saltName='Salinity',
                                     oxName='OxMgL',
@@ -338,9 +338,9 @@ if __name__ == "__main__":
                                     oxsatName='OptOx',
                                     refdate="seconds since 1970-01-01:00:00:00",
                                     selected_depths=selected_depths,
-                                    write_to_excel=True,
+                                    write_to_excel=False,
                                     conductivity_to_salinity=False,
-                                    debug=False)
+                                    debug=True)
 
     kw = dict(compression=None)
     kw.update(below_water=True)

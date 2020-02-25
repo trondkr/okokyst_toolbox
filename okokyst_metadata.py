@@ -61,14 +61,14 @@ def addStationMeadata(station, CTDConfig, options = None):
             station.header = "STATION;TYS2;MON;68.0898;16.184\n"
             station.longitude = 16.184
             station.latitude = 68.0898
-        if station.name == "GLOM1":
-            station.header = "STATION;GLOM1;MON;66.8242;13.6244\n"
-            station.longitude = 13.6244
-            station.latitude = 66.8242
-        if station.name == "GLOM2":
-            station.header = "STATION;GLOM2;MON;66.8066;13.7995\n"
-            station.longitude = 13.7995
-            station.latitude = 66.8066
+      # if station.name == "GLOM1":
+      #      station.header = "STATION;GLOM1;MON;66.8242;13.6244\n"
+      #      station.longitude = 13.6244
+      #      station.latitude = 66.8242
+      #  if station.name == "GLOM2":
+      #      station.header = "STATION;GLOM2;MON;66.8066;13.7995\n"
+      #      station.longitude = 13.7995
+      #      station.latitude = 66.8066
           
     if station.survey == "Hardangerfjorden":
         if station.name == "VT52":
