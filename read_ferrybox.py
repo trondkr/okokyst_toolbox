@@ -1,33 +1,13 @@
-# flu
-# flu bcor final
-# flu fcal corrected
-import matplotlib
-from pathlib import Path
-
-# matplotlib.use('Agg')
-import matplotlib.pyplot as plt
-import os
-import numpy as np
-import string
-
-from netCDF4 import date2num, num2date
-import pandas as pd
 from datetime import datetime
-import glob
-import progressbar
-import ferryBoxStationClass as fb
-
-from datetime import datetime, timedelta
+from netCDF4 import date2num
 from pyniva import Vessel, TimeSeries, token2header
-from pyniva import PUB_META, PUB_TSB  # Meta data and time-series data endpoints
-from pyniva import META_HOST, TSB_HOST
 
-# import tables
+import ferryBoxStationClass as fb
 
 __author__ = 'Trond Kristiansen'
 __email__ = 'trond.kristiansen@niva.no'
 __created__ = datetime(2019, 1, 22)
-__modified__ = datetime(2019, 1, 22)
+__modified__ = datetime(2020, 3, 6)
 __version__ = "1.0"
 __status__ = "Development"
 
@@ -51,7 +31,7 @@ def get_list_of_available_timeseries_for_vessel(vessel_name, vessel_abbreviation
             # Get signals the vessel
             signals = v.get_all_tseries(meta_host, header=header)
           #  for s in signals:
-          #       print(s.path)
+          #      print(s.path)
 
             if variable == 'temperature':
                 db_path = "{}/ferrybox/CTD/TEMPERATURE".format(vessel_abbreviation)
@@ -79,8 +59,7 @@ def get_list_of_available_timeseries_for_vessel(vessel_name, vessel_abbreviation
                                                       end_time=end_date,  # datetime.utcnow()- timedelta(90),
                                                       name_headers=True,
                                                       header=header,
-                                                      noffill=True,
-                                                      dt=0)
+                                                      noffill=True)
     return data
 
 
@@ -90,7 +69,7 @@ def get_data_around_station(df, st_lon, st_lat, dist):
 
     return df[
         (st_lat - dist < df['latitude']) & (df['latitude'] < st_lat + dist) & (st_lon - 2 * dist < df['longitude']) & (
-                    df['longitude'] < st_lon + 2 * dist)]
+                df['longitude'] < st_lon + 2 * dist)]
 
 
 def create_station(stationid, df, varname, dist):
@@ -102,56 +81,83 @@ def create_station(stationid, df, varname, dist):
     # Create the station 
     return fb.FerryBoxStation(stationid, metadata, df_st, varname)
 
+
 def ferrybox_metadata(staionid):
     return \
-    {'VT4': {'name': 'Hvitsten', 'latitude': 59.59, 'longitude': 10.64,
-             'vessel': 'FA', 'vessel_name': 'MS Color Fantasy'},
-     'VT12': {'name': 'Sognesjøen', 'latitude': 60.9804, 'longitude': 4.7568,
-              'vessel': 'TF',
-              'vessel_name': 'MS Trollfjord'},
-     'VT72': {'name': 'Herøyfjorden og VT71:Skinnbrokleia', 'latitude': 62.3066, 'longitude': 5.5877,
-              'vessel': 'TF',
-              'vessel_name': 'MS Trollfjord'},
-     'VT80': {'name': 'Djupfest', 'latitude': 63.76542, 'longitude': 9.52296,
-              'vessel': 'TF',
-              'vessel_name': 'MS Trollfjord'},
-     'VT45': {'name': 'Valset', 'latitude': 63.65006, 'longitude': 9.77012,
-              'vessel': 'TF',
-              'vessel_name': 'MS Trollfjord'},
-     'VT22': {'name': 'Biologisk Stasjon', 'latitude': 63.46, 'longitude': 10.3,
-              'vessel': 'TF',
-              'vessel_name': 'MS Trollfjord'},
-     'VT23': {'name': 'Trondheimsleia', 'latitude': 63.45737, 'longitude': 8.85324,
-              'vessel': 'TF',
-              'vessel_name': 'MS Trollfjord'},
-     'VT76': {'name': 'Oksebåsneset', 'latitude': 69.82562, 'longitude': 30.11961,
-              'vessel': 'TF',
-              'vessel_name': 'MS Trollfjord'},
-     'VR23': {'name': 'Blodskytodden', 'latitude': 70.4503, 'longitude': 31.0031,
-              'vessel': 'TF',
-              'vessel_name': 'MS Trollfjord'},
-     'VR25': {'name': 'Tanafjorden ytre', 'latitude': 70.98425, 'longitude': 28.78323,
-              'vessel': 'TF',
-              'vessel_name': 'MS Trollfjord'},
-     'VR51': {'name': 'Korsen', 'latitude': 62.0944, 'longitude': 7.0061,
-              'vessel': 'TF',
-              'vessel_name': 'MS Trollfjord'},
-     'VR31': {'name': 'Tilremsfjorden', 'latitude': 65.6009, 'longitude': 12.2354,
-              'vessel': 'TF',
-              'vessel_name': 'MS Trollfjord'}
-     }[stationid]
+        {'VT4': {'name': 'Hvitsten', 'latitude': 59.59, 'longitude': 10.64,
+                 'vessel': 'FA', 'vessel_name': 'MS Color Fantasy'},
+         'VT12': {'name': 'Sognesjøen', 'latitude': 60.9804, 'longitude': 4.7568,
+                  'vessel': 'TF',
+                  'vessel_name': 'MS Trollfjord'},
+         'VT72': {'name': 'Herøyfjorden og VT71:Skinnbrokleia', 'latitude': 62.3066, 'longitude': 5.5877,
+                  'vessel': 'TF',
+                  'vessel_name': 'MS Trollfjord'},
+         'VT80': {'name': 'Djupfest', 'latitude': 63.76542, 'longitude': 9.52296,
+                  'vessel': 'TF',
+                  'vessel_name': 'MS Trollfjord'},
+         'VT45': {'name': 'Valset', 'latitude': 63.65006, 'longitude': 9.77012,
+                  'vessel': 'TF',
+                  'vessel_name': 'MS Trollfjord'},
+         'VT22': {'name': 'Biologisk Stasjon', 'latitude': 63.46, 'longitude': 10.3,
+                  'vessel': 'TF',
+                  'vessel_name': 'MS Trollfjord'},
+         'VT23': {'name': 'Trondheimsleia', 'latitude': 63.45737, 'longitude': 8.85324,
+                  'vessel': 'TF',
+                  'vessel_name': 'MS Trollfjord'},
+         'VT76': {'name': 'Oksebåsneset', 'latitude': 69.82562, 'longitude': 30.11961,
+                  'vessel': 'TF',
+                  'vessel_name': 'MS Trollfjord'},
+         'VR23': {'name': 'Blodskytodden', 'latitude': 70.4503, 'longitude': 31.0031,
+                  'vessel': 'TF',
+                  'vessel_name': 'MS Trollfjord'},
+         'VR25': {'name': 'Tanafjorden ytre', 'latitude': 70.98425, 'longitude': 28.78323,
+                  'vessel': 'TF',
+                  'vessel_name': 'MS Trollfjord'},
+         'VR51': {'name': 'Korsen', 'latitude': 62.0944, 'longitude': 7.0061,
+                  'vessel': 'TF',
+                  'vessel_name': 'MS Trollfjord'},
+         'VR31': {'name': 'Tilremsfjorden', 'latitude': 65.6009, 'longitude': 12.2354,
+                  'vessel': 'TF',
+                  'vessel_name': 'MS Trollfjord'},
+         'VT3': {'name': 'Torbjørnskjær', 'latitude': 59.0407, 'longitude': 10.7608,
+                 'vessel': 'FA',
+                 'vessel_name': 'MS Color Fantasy'},
+         'VT71': {'name': 'Skinnbrokleia', 'latitude': 62.32841, 'longitude': 5.75517,
+                  'vessel': 'TF',
+                  'vessel_name': 'MS Trollfjord'},
+         'VR54': {'name': 'Straumsfjorden', 'latitude': 69.502, 'longitude': 18.338,
+                  'vessel': 'TF',
+                  'vessel_name': 'MS Trollfjord'},
+         'Dk1': {'name': 'Steilene', 'latitude': 59.814999, 'longitude': 10.569384,
+                 'vessel': 'FA',
+                 'vessel_name': 'MS Color Fantasy'},
+         'Im2': {'name': 'Elle', 'latitude': 59.620367, 'longitude': 10.628200,
+                 'vessel': 'FA',
+                 'vessel_name': 'MS Color Fantasy'},
+         'VT81': {'name': 'Alvenes', 'latitude': 67.2743, 'longitude': 14.9770,
+                  'vessel': 'TF',
+                  'vessel_name': 'MS Trollfjord'},
+         'VT82': {'name': 'Setså', 'latitude': 67.1709, 'longitude': 15.4461,
+                  'vessel': 'TF',
+                  'vessel_name': 'MS Trollfjord'},
+         'VT3X': {'name': 'Skagerrak', 'latitude': 59.0407, 'longitude': 10.7608,
+                  'vessel': 'FA',
+                  'vessel_name': 'MS Color Fantasy'}
+         }[stationid]
 
 
 # MAIN 
 
-substations = ['VT4', 'VT12','VT72', 'VT80', 'VT45', 'VT22', 'VT23', 'VT76', 'VR23', 'VR25','VR51','VR31']
-#substations=['VR31']
-varnames=['temperature','salinity','cdom_fluorescence','turbidity','chla_fluorescence']
-varnames=['temperature','salinity']
+substations = ['VT4', 'VT12', 'VT72', 'VT80', 'VT45', 'VT22', 'VT23', 'VT76', 'VR23', 'VR25', 'VR51', 'VR31', 'VT3',
+               'VT71', 'VR54','VT81','VT82','VR54']
+substations = ['Dk1','Im2']
+
+varnames = ['temperature', 'salinity', 'cdom_fluorescence', 'turbidity', 'chla_fluorescence']
+varnames = ['temperature']
 dist = 0.1
 
-start_date = datetime(2019, 1, 1)
-end_date = datetime(2019, 12, 31)
+start_date = datetime(2013, 1, 1)
+end_date = datetime(2013, 12, 31)
 # start_date=datetime(2018,1,1)
 # end_date=datetime(2018,12,31)
 
@@ -159,15 +165,20 @@ end_date = datetime(2019, 12, 31)
 
 for varname in varnames:
     for stationid in substations:
+        if stationid in ['VT3X']:
+            dist = 0.5
+            print("WARNING: Extending the search area to cover much of Skagerrak. dist={}".format(dist))
+
         metadata = ferrybox_metadata(stationid)
-        print('Creating station for {} using vessel {} and variable {}'.format(stationid,metadata['vessel_name'],varname))
+        print('Creating station for {} using vessel {} and variable {}'.format(stationid, metadata['vessel_name'],
+                                                                               varname))
         tsbdata = get_list_of_available_timeseries_for_vessel(metadata['vessel_name'],
                                                               metadata['vessel'],
                                                               start_date,
                                                               end_date,
                                                               varname)
 
-        station = create_station(stationid,tsbdata,varname,dist)
+        station = create_station(stationid, tsbdata, varname, dist)
         station.start_date_jd = date2num(start_date, units=station.refdate, calendar="standard")
         station.end_date_jd = date2num(end_date, units=station.refdate, calendar="standard")
 

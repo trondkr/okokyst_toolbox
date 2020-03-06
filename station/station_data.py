@@ -160,6 +160,7 @@ class StationData:
         # Need to find the start and end for May-Sept and June - Aug
 
         periods = [[5, 9], [6, 8]]
+        periods = [[1, 11]]
         foundStart = False
         foundEnd = False
         year = 2019
@@ -188,17 +189,25 @@ class StationData:
             foundEnd = False
             foundStart = False
 
-            sa = np.ma.masked_where(de > 10, sa)
-            te = np.ma.masked_where(de > 10, te)
+            # sa = np.ma.masked_where(de > 10, sa)
+            # te = np.ma.masked_where(de > 10, te)
             sa = np.ma.masked_invalid(sa)
             ox = np.ma.masked_invalid(ox)
             te = np.ma.masked_invalid(te)
-
+            print(np.shape(sa))
+            print(np.min(sa,axis=0) == self.salinity)
+            print(np.ma.argmin(sa,axis=0))
             print("Period: %s to %s" % (stDates[indStart], stDates[indEnd]))
-            print("Mean salt:  %3.2f " % (np.ma.mean(sa)))
-            print("Mean temp:  %3.2f " % (np.ma.mean(te)))
+            print("Mean salt:  %3.2f (%3.2f to %3.2f ) " % (np.ma.mean(sa),
+                                                                     sa[np.ma.argmin(sa)],
+                                                                     sa[np.ma.argmax(sa)]))
+            print("Mean temp:  %3.2f (%3.2f to %3.2f) " % (np.ma.mean(te),
+                                                                     te[np.ma.argmin(te)],
+                                                                     te[np.ma.argmax(te)]))
             print("Mean oxygen:  %3.2f " % (np.ma.mean(ox)))
 
+
+"""
         print("Overall through the year {}".format(year))
         ox = np.asarray([item for sublist in self.oxygen[indStartFullYear:indEndFullYear] for item in sublist])
         ftu = np.asarray([item for sublist in self.ftu[indStartFullYear:indEndFullYear] for item in sublist])
@@ -232,3 +241,4 @@ class StationData:
         if len(maximumTempDepthIndex) > 1:
             maximumTempDepthIndex = maximumTempDepthIndex[0]
         print("Maximum temperature %3.2f at depth: %3.2f" % (maximumTemp, de[maximumTempDepthIndex]))
+"""
