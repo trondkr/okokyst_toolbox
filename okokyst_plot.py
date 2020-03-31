@@ -1,3 +1,5 @@
+import os
+
 import matplotlib
 from mpl_toolkits.basemap import Basemap
 import matplotlib.pyplot as plt
@@ -20,8 +22,8 @@ def plotStation(station, dateObject):
     ax.set_xlabel("Temp[$^\circ$C] & Oxygen [$ml/L$]")
     ax2.set_xlabel("Salinity [psu]")
     ax.set_ylabel("Depth [m]")
-    ax.legend(loc="lower left", prop={'size': 6})
-    ax2.legend(loc="lower right", prop={'size': 6})
+    ax.legend(loc="upper left", prop={'size': 6})
+    ax2.legend(loc="upper right", prop={'size': 6})
 
     figurepath = "figures/%s" % (station.survey)
     if not os.path.exists(figurepath):

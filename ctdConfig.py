@@ -6,6 +6,7 @@ class CTDConfig(object):
                  createTimeseriesPlot, 
                  binDataWriteToNetCDF, 
                  describeStation,
+                 createHistoricalTimeseries,
                  showStats, 
                  plotStationMap, 
                  tempName, 
@@ -44,3 +45,4 @@ class CTDConfig(object):
         self.projectname=None
         self.selected_depths=selected_depths
         self.mgperliter_to_mlperliter=0.7
+        self.createHistoricalTimeseries=createHistoricalTimeseries

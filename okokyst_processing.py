@@ -1,36 +1,28 @@
-import matplotlib
-from pathlib import Path
-import ctd
-from ctd import movingaverage, lp_filter
-from pathlib import Path
-
-#matplotlib.use('Agg')
-import matplotlib.pyplot as plt
+import xarray as xr
 import os
-import numpy as np
-import string
-import matplotlib.pyplot as plt
-import gsw
-
-from netCDF4 import date2num, num2date
-import pandas as pd
 from datetime import datetime
-import glob
-import progressbar
 
+import ctd
+import numpy as np
+import pandas as pd
+import progressbar
+from ctd import movingaverage
+from netCDF4 import date2num
+
+import ctdConfig as CTDConfig
 # Local files
 import okokyst_map
 import okokyst_tools
 from station.station_class import Station
-import ctdConfig as CTDConfig
 
 __author__ = 'Trond Kristiansen'
 __email__ = 'trond.kristiansen@niva.no'
 __created__ = datetime(2017, 2, 24)
-__modified__ = datetime(2019, 1, 8)
+__modified__ = datetime(2020, 3, 17)
 __version__ = "1.0"
 __status__ = "Development"
-    
+
+
 # ---------------------------------------------------
 # OKOKYST_TOOLBOX INFO:
 #
@@ -63,12 +55,12 @@ def qualityCheckStation(filename, dateObject, station, CTDConfig):
 
     cast, metadata = ctd.from_saiv(filename)
     downcast, upcast = cast.split()
-    if station.name in ["OKS2"] and dateObject.year==2019:
-        upcast=downcast
+    if station.name in ["OKS2"] and dateObject.year == 2019:
+        upcast = downcast
 
     if (not downcast.empty and CTDConfig.useDowncast) or (not upcast.empty and not CTDConfig.useDowncast):
         if CTDConfig.useDowncast:
-            downcast_copy=downcast.copy()
+            downcast_copy = downcast.copy()
 
             downcast_copy['dz/dtM'] = movingaverage(downcast['dz/dtM'], window_size=2)
             downcast['dz/dtM'].loc[downcast_copy['dz/dtM'] == np.nan].fillna(0)
@@ -76,53 +68,57 @@ def qualityCheckStation(filename, dateObject, station, CTDConfig):
 
             downcast = downcast[downcast['dz/dtM'] >= 0.1]  # Threshold velocity.
             window = okokyst_tools.findMaximumWindow(downcast, CTDConfig.tempName)
-            window=10
-            
-            temperature = downcast[CTDConfig.tempName]\
-                        .remove_above_water()\
-                        .despike(n1=2, n2=20, block=window)\
-                        .interpolate(method='index',\
-                        limit_direction='both',
-                        limit_area='inside')\
-                        .smooth(window_len=2, window='hanning')
-            salinity = downcast[CTDConfig.saltName]\
-                        .remove_above_water()\
-                        .despike(n1=2, n2=20, block=window)\
-                        .interpolate(method='index',\
-                        limit_direction='both',
-                        limit_area='inside')\
-                        .smooth(window_len=2, window='hanning')
-            oxygen = downcast[CTDConfig.oxName]\
-                        .remove_above_water()\
-                        .despike(n1=2, n2=20, block=window)\
-                        .interpolate(method='index',\
-                        limit_direction='both',
-                        limit_area='inside')\
-                        .smooth(window_len=2, window='hanning')
-            oxsat = downcast[CTDConfig.oxsatName]\
-                        .remove_above_water()\
-                        .despike(n1=2, n2=20, block=window)\
-                        .interpolate(method='index',\
-                        limit_direction='both',
-                        limit_area='inside')\
-                        .smooth(window_len=2, window='hanning')
-            ftu = downcast[CTDConfig.ftuName]\
-                        .remove_above_water()\
-                        .despike(n1=2, n2=20, block=window)\
-                        .interpolate(method='index',\
-                        limit_direction='both',
-                        limit_area='inside')\
-                        .smooth(window_len=2, window='hanning')
-    
+            window = 10
+
+            temperature = downcast[CTDConfig.tempName] \
+                .remove_above_water() \
+                .despike(n1=2, n2=20, block=window) \
+                .interpolate(method='index', \
+                             limit_direction='both',
+                             limit_area='inside') \
+                .smooth(window_len=2, window='hanning')
+            salinity = downcast[CTDConfig.saltName] \
+                .remove_above_water() \
+                .despike(n1=2, n2=20, block=window) \
+                .interpolate(method='index', \
+                             limit_direction='both',
+                             limit_area='inside') \
+                .smooth(window_len=2, window='hanning')
+            oxygen = downcast[CTDConfig.oxName] \
+                .remove_above_water() \
+                .despike(n1=2, n2=20, block=window) \
+                .interpolate(method='index', \
+                             limit_direction='both',
+                             limit_area='inside') \
+                .smooth(window_len=2, window='hanning')
+            oxsat = downcast[CTDConfig.oxsatName] \
+                .remove_above_water() \
+                .despike(n1=2, n2=20, block=window) \
+                .interpolate(method='index', \
+                             limit_direction='both',
+                             limit_area='inside') \
+                .smooth(window_len=2, window='hanning')
+            ftu = downcast[CTDConfig.ftuName] \
+                .remove_above_water() \
+                .despike(n1=2, n2=20, block=window) \
+                .interpolate(method='index', \
+                             limit_direction='both',
+                             limit_area='inside') \
+                .smooth(window_len=2, window='hanning')
+
             if CTDConfig.showStats:
-                print("=> STATS FOR DOWNCAST TEMP at %s:\n %s" % (station.name, downcast[[CTDConfig.tempName]].describe()))
-                print("=> STATS FOR DOWNCAST SALT at %s:\n %s" % (station.name, downcast[[CTDConfig.saltName]].describe()))
-                print("=> STATS FOR DOWNCAST OXYGEN at %s:\n %s" % (station.name, downcast[[CTDConfig.oxName]].describe()))
-                print("=> STATS FOR DOWNCAST FTU at %s:\n %s" % (station.name, downcast[[CTDConfig.ftuName]].describe()))
+                print("=> STATS FOR DOWNCAST TEMP at %s:\n %s" % (
+                    station.name, downcast[[CTDConfig.tempName]].describe()))
+                print("=> STATS FOR DOWNCAST SALT at %s:\n %s" % (
+                    station.name, downcast[[CTDConfig.saltName]].describe()))
+                print("=> STATS FOR DOWNCAST OXYGEN at %s:\n %s" % (
+                    station.name, downcast[[CTDConfig.oxName]].describe()))
+                print(
+                    "=> STATS FOR DOWNCAST FTU at %s:\n %s" % (station.name, downcast[[CTDConfig.ftuName]].describe()))
         else:
 
             upcast['dz/dtM'] = movingaverage(upcast['dz/dtM'], window_size=2)
-        #    upcast['dz/dtM'] = upcast['dz/dtM'].fillna(0)
+            #    upcast['dz/dtM'] = upcast['dz/dtM'].fillna(0)
             upcast['dz/dtM'] = upcast['dz/dtM'].replace([np.inf, -np.inf], 0.5)
             upcast = upcast[upcast['dz/dtM'] >= 0.1]  # Threshold velocity.
 
@@ -141,99 +137,171 @@ def qualityCheckStation(filename, dateObject, station, CTDConfig):
                 print("=> STATS FOR UPCAST FTU at %s:\n %s" % (station.name, upcast[[CTDConfig.ftuName]].describe()))
 
         # Binning
-       
-        delta=1
+
+        delta = 1
         if CTDConfig.survey == "Soerfjorden":
-            window_len=1
-        if CTDConfig.survey in ["Sognefjorden","Hardangerfjorden", "MON"]:
-            window_len=10
-            
+            window_len = 1
+        if CTDConfig.survey in ["Sognefjorden", "Hardangerfjorden", "MON"]:
+            window_len = 10
+
         # Smoothing and interpolation
         temperature = temperature.interpolate(method='linear')
-       # temperature = temperature.smooth(window_len=window_len, window='hanning')
+        # temperature = temperature.smooth(window_len=window_len, window='hanning')
 
         oxygen = oxygen.interpolate(method='linear')
-        #oxygen = oxygen.smooth(window_len=window_len, window='hanning')
+        # oxygen = oxygen.smooth(window_len=window_len, window='hanning')
 
         oxsat = oxsat.interpolate(method='linear')
-       # oxsat = oxsat.smooth(window_len=window_len, window='hanning')
-        
+        # oxsat = oxsat.smooth(window_len=window_len, window='hanning')
+
         ftu = ftu.interpolate(method='linear')
-       # ftu = ftu.smooth(window_len=1, window='hanning')
+        # ftu = ftu.smooth(window_len=1, window='hanning')
 
         salinity = salinity.interpolate(method='linear')
-      #  salinity = salinity.smooth(window_len=window_len, window='hanning')
-        
+        #  salinity = salinity.smooth(window_len=window_len, window='hanning')
+
         # Bin the data to delta intervals   
         temperature = temperature.bindata(delta=delta, method='interpolate')
         salinity = salinity.bindata(delta=delta, method='interpolate')
         oxygen = oxygen.bindata(delta=delta, method='interpolate')
         oxsat = oxsat.bindata(delta=delta, method='interpolate')
-        
-        if station.name not in ['SJON1','SJON2']:
+
+        if station.name not in ['SJON1', 'SJON2']:
             ftu = ftu.bindata(delta=delta, method='interpolate')
-       
+
         df = pd.DataFrame(index=salinity.index, columns=["Depth", "Temperature", "Salinity", "Oxygen", "Oxsat", "FTU"])
-       # df = df.fillna(0)
-       # df = df.reset_index(drop=True)
-        
-       # oxsat = oxsat.reset_index(drop=True)
-        df["Depth"]= salinity.index
+        # df = df.fillna(0)
+        # df = df.reset_index(drop=True)
+
+        # oxsat = oxsat.reset_index(drop=True)
+        df["Depth"] = salinity.index
         df["Temperature"] = temperature
         df["Salinity"] = salinity
         df["Oxygen"] = oxygen
         df["Oxsat"] = oxsat
-        if station.name not in ['SJON1','SJON2']:
+        if station.name not in ['SJON1', 'SJON2']:
             df["FTU"] = ftu
-       
+
         # Add data to station object for later
         station.addData(salinity, temperature, oxygen, oxsat, ftu, salinity.index,
                         date2num(dateObject, CTDConfig.refdate, calendar="standard"))
         return df
+
+# Add data from Aquamonitor (netcdf) files to be able to plot longer time series.
+def addHistoricalData(station, CTDConfig):
+    if station.name in ['VT69']:
+        ds = xr.open_dataset('/Users/trondkr/Dropbox/NIVA/OKOKYST/Historical_oekokyst_data/VT69_2013_2016.nc')
+    if station.name in ['VT70']:
+            ds = xr.open_dataset('/Users/trondkr/Dropbox/NIVA/OKOKYST/Historical_oekokyst_data/VT70_2013_2016.nc')
+
+    df = ds.to_dataframe().groupby(['time', 'depth']).mean()
+    first = True
+
+    for date_depth_index, row in df.iterrows():
+
+        if first:
+            old_date = date_depth_index[0]
+            temperature = []
+            depth = []
+            salinity = []
+            oxsat = []
+            oxygen = []
+            ftu = []
+
+            first = False
+
+        if old_date == date_depth_index[0]:
+            temperature.append(row['temp'])
+            salinity.append(row['salt'])
+            oxsat.append(row['O2sat'])
+            oxygen.append(row['O2vol'])
+            depth.append(float(date_depth_index[1]))
+            ftu.append(row['O2vol']*np.nan)
+        else:
+            print("Storing data for time {}".format(date_depth_index[0]))
+            depth=pd.Series(depth)
+            temperature = pd.Series(temperature, index=depth)
+            salinity = pd.Series(salinity, index=depth)
+            oxygen = pd.Series(oxygen, index=depth)
+            oxsat = pd.Series(oxsat, index=depth)
+            ftu = pd.Series(ftu, index=depth)
+
+            df_new = pd.DataFrame(columns=["Depth", "Temperature", "Salinity", "Oxygen", "Oxsat", "FTU"])
+            df_new.set_index('Depth', inplace=True, drop=False)
+
+            df_new["Depth"] = depth
+            df_new["Temperature"] = temperature
+            df_new["Salinity"] = salinity
+            df_new["Oxygen"] = oxygen
+            df_new["Oxsat"] = oxsat
+
+            # Add data to station object for later
+            station.addData(salinity, temperature, oxygen, oxsat, ftu, salinity.index,
+                            date2num(date_depth_index[0], CTDConfig.refdate, calendar="standard"))
+
+            temperature = []
+            depth = []
+            salinity = []
+            oxsat = []
+            oxygen = []
+            ftu = []
+
+            old_date = date_depth_index[0]
+            temperature.append(row['temp'])
+            salinity.append(row['temp'])
+            oxsat.append(row['O2sat'])
+            oxygen.append(row['O2vol'])
+            depth.append(float(date_depth_index[1]))
+            ftu.append(row['O2vol']*np.nan)
 
 def createContours(stationsList, CTDConfig):
     for station in stationsList:
         station.createTimeSection(CTDConfig)
         station.createContourPlots(CTDConfig)
 
+def createHistoricalTimeseries(stationsList, CTDConfig):
+    for station in stationsList:
+        station.createTimeSection(CTDConfig)
+        station.createHistoricalTimeseries(CTDConfig)
+
 def createTimeseries(stationsList, CTDConfig):
     for station in stationsList:
         station.createTimeSection(CTDConfig)
         station.createTimeseriesPlot(CTDConfig)
-        
+
+
 def main(surveys, months, CTDConfig):
-    
     for survey in surveys:
-        CTDConfig.survey=survey
-        if CTDConfig.survey in ["Hardangerfjorden","Sognefjorden","Soerfjorden"]:
-            CTDConfig.useDowncast=True
+        CTDConfig.survey = survey
+        if CTDConfig.survey in ["Hardangerfjorden", "Sognefjorden", "Soerfjorden"]:
+            CTDConfig.useDowncast = True
         if CTDConfig.survey in ["MON"]:
-            CTDConfig.useDowncast=False
-        
+            CTDConfig.useDowncast = False
+
         stationsList = []
         stationNamesList = []
-            
+
         if CTDConfig.survey == "MON":
             basepath = "/Users/trondkr/Dropbox/MON-data/CONVERTED/"
-            subStations = ['NORD1','NORD2','TYS1','TYS2','SAG1','SAG2',
-                           'OFOT1','OFOT2','OKS1','OKS2','SJON1','SJON2']
+            subStations = ['NORD1', 'NORD2', 'TYS1', 'TYS2', 'SAG1', 'SAG2',
+                           'OFOT1', 'OFOT2', 'OKS1', 'OKS2', 'SJON1', 'SJON2']
 
-            stationid = ["62215","62216","62217","62218","62219","62220",
-                         "62221","62222","62223","62224","68577","68578"]
+            stationid = ["62215", "62216", "62217", "62218", "62219", "62220",
+                         "62221", "62222", "62223", "62224", "68577", "68578"]
 
             projectid = '5482'
             method = 'AkvaplanNIVA'
             projectname = 'Marin overvåking Nordland'
-                         
+
         if CTDConfig.survey == "Soerfjorden":
             basepath = "/Users/trondkr/Dropbox/Sorfjorden_2017_2019/"
-            subStations = ["SOE72", "Lind1", "S22","S16","SOE10"]
+            subStations = ["SOE72", "Lind1", "S22", "S16", "SOE10"]
             subStations = ["SOE72", "Lind1", "S22"]
-            stationid = ["SOE72", "Lind1", "S22","S16","SOE10"]
+            stationid = ["SOE72", "Lind1", "S22", "S16", "SOE10"]
             projectid = 'Soerfjorden'
             method = 'NIVA'
             projectname = 'Soerfjorden'
-            
+
         if CTDConfig.survey == "Hardangerfjorden":
             basepath = "/Users/trondkr/Dropbox/ØKOKYST_NORDSJØENNORD_CTD/Hardangerfjorden/"
             projectid = '10526'
@@ -241,6 +309,8 @@ def main(surveys, months, CTDConfig):
             projectname = 'OKOKYST Nordsjoen Nord'
             subStations = ["VT70", "VT69", "VT74", "VT53", "VT52", "VT75"]
             stationid = ["68910", "68908", "68913", "68911", "69164", "69165"]
+            subStations = ["VT75"]
+            stationid = ["69165"]
 
         if CTDConfig.survey == "Sognefjorden":
             basepath = "/Users/trondkr/Dropbox/ØKOKYST_NORDSJØENNORD_CTD/Sognefjorden/"
@@ -249,31 +319,34 @@ def main(surveys, months, CTDConfig):
             projectname = 'OKOKYST Nordsjoen Nord'
             subStations = ["VT16", "VT79"]
             stationid = ["68915", "68914"]
-        
+
         subdirectories = sorted(os.listdir(basepath))
 
         pbar = progressbar.ProgressBar(max_value=len(subdirectories), redirect_stdout=True).start()
-        
-        for sub_index,subStation in enumerate(subStations):
+
+        for sub_index, subStation in enumerate(subStations):
             station = Station(subStation, CTDConfig.survey, CTDConfig.survey)
             stationsList.append(station)
-            station.stationid=stationid[sub_index]
-            
+            station.stationid = stationid[sub_index]
+
+            if CTDConfig.createHistoricalTimeseries:
+                addHistoricalData(station, CTDConfig)
+
             print("\nSurvey: {} => Adding station {}".format(survey, subStation))
             for i, folder in enumerate(subdirectories):
-                pbar.update(i+1)
+                pbar.update(i + 1)
                 if okokyst_tools.locateDir(basepath + folder):
                     dirLevel2 = basepath + folder + "/" + folder + " CTD data"
                     if okokyst_tools.locateDir(dirLevel2):
                         dateObject = datetime(int(folder[0:4]), int(folder[5:7]), int(folder[8:10]))
                         strmonth = str(dateObject.strftime("%b"))
-                       
+
                         if strmonth in months:
                             filename = okokyst_tools.locateFile(dirLevel2, subStation)
                             if CTDConfig.debug:
                                 print("=> Identified correct file: {} for month {}".format(filename, strmonth))
 
-                            if filename != None:    
+                            if filename != None:
                                 bb = os.path.basename(filename)
                                 filestation = os.path.splitext(bb)
 
@@ -285,52 +358,55 @@ def main(surveys, months, CTDConfig):
             if CTDConfig.describeStation:
                 st.describeStation(CTDConfig)
             if CTDConfig.createTSPlot:
-                print(survey)
                 st.plotStationTS(survey)
 
             if CTDConfig.binDataWriteToNetCDF:
-                st.binDataWriteToNetCDF(CTDConfig, basepath+"to_netCDF")
+                st.binDataWriteToNetCDF(CTDConfig, basepath + "to_netCDF")
 
             if CTDConfig.write_to_excel:
-                st.projectname=projectname
-                st.method=method
-                st.projectid=projectid
+                st.projectname = projectname
+                st.method = method
+                st.projectid = projectid
                 st.write_station_to_excel(CTDConfig)
-                
+
         if CTDConfig.createContourPlot:
             createContours(stationsList, CTDConfig)
 
+        if CTDConfig.createHistoricalTimeseries:
+            createHistoricalTimeseries(stationsList, CTDConfig)
+
         if CTDConfig.createTimeseriesPlot:
             createTimeseries(stationsList, CTDConfig)
-            
+
         if CTDConfig.plotStationMap:
             okokyst_map.createMap(stationsList)
 
+
 if __name__ == "__main__":
-    
     # EDIT
     surveys = ["Hardangerfjorden", "Sognefjorden"]
-    surveys = ["Soerfjorden","MON"]
-    surveys = ["MON"]
- 
-    months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov","Dec"]
-    
+    surveys = ["Soerfjorden", "MON"]
+    surveys = ["Hardangerfjorden"]
+
+    months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
+
     # Define the depth levels (meters) you want to create plots showing the annual differences
     # Onoy used when createTimeseriesPlot=True
-    selected_depths=[3,100,200]
-    
+    selected_depths = [3, 100, 200]
+
     # NOTE: make sure the function "addStationMeadata" is up to date with info
     # MON survey needs to use upcast
     # ØKOKYST should use downcast
-        
+
     CTDConfig = CTDConfig.CTDConfig(createStationPlot=False,
                                     createTSPlot=False,
                                     createContourPlot=False,
-                                    createTimeseriesPlot=False,
+                                    createTimeseriesPlot=True,
                                     binDataWriteToNetCDF=False,
                                     describeStation=False,
+                                    createHistoricalTimeseries=False,
                                     showStats=False,
-                                    plotStationMap=True,
+                                    plotStationMap=False,
                                     tempName='Temp',
                                     saltName='Salinity',
                                     oxName='OxMgL',
@@ -340,7 +416,7 @@ if __name__ == "__main__":
                                     selected_depths=selected_depths,
                                     write_to_excel=False,
                                     conductivity_to_salinity=False,
-                                    debug=True)
+                                    debug=False)
 
     kw = dict(compression=None)
     kw.update(below_water=True)
