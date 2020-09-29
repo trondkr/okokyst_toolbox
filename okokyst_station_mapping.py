@@ -1,6 +1,8 @@
 import numpy as np
 import pandas as pd
 import datetime
+from okokyst_metadata import serveys_lookup_table
+import os
 
 __author__   = 'Elizaveta Protsenko'
 __email__    = 'Elizaveta.Protsenko@niva.no'
@@ -8,118 +10,166 @@ __created__  = datetime.datetime(2020, 9, 23)
 __version__  = "1.0"
 __status__   = "Development"
 
-
-hardanger_stations = pd.DataFrame({
-    "st_names": ['VT53', 'VT69', 'VT70', 'VT74'],
-    "st_longnames": ['Tveitneset', 'Korsfjorden', 'Bjornafjorden','Maurangsfjorden'],
-    "st_lat": ['60.4014', '60.1788', '60.1043', '60.1061'],
-    "st_long": ['6.4398', '5.2393', '5.4742', '6.168'],
-    "depths":    [700.0, 5.0, 590.0, 230.0]
-    })
-
-sognefjorden_stations = pd.DataFrame({
-    "st_names":     ['VT16','VT79'],
-    "st_longnames": ['Kyrkjeboe','Naersnes'],
-    "st_lat":       ['61.14600', '60.9963'],
-    "st_long":      [5.9527, 7.0556],
-    "depths":       [1300.0, 500.0]
-    })
-
-stations_dict = {'hardanger': hardanger_stations,
-                 'sognefjorden': sognefjorden_stations}
+encoding = "ISO-8859-1"
 
 
-# read the document and skip undefined number of unneeded rows
-def read_convert_df(base_path, file_path):
-    path = base_path + file_path
-    print (path)
-    for n in range(0, 10):
+def to_rename_columns(df,old_name, new_name):
+    if old_name in df.columns:
+        df = df.rename(columns={old_name : new_name})
+    return df
+
+
+def modify_df(df):
+    df = to_rename_columns(df, 'Press', "Depth")
+    df = to_rename_columns(df, 'Depth(u)', "Depth")
+    df = to_rename_columns(df, 'Sal.', 'Salinity')
+    df = to_rename_columns(df, 'T(FTU)', 'FTU')
+    df = to_rename_columns(df, 'T (FTU)', 'FTU')
+    df = to_rename_columns(df, 'OpOx %', 'OptOx')
+    df = to_rename_columns(df, 'Opmg / l', 'OxMgL')
+
+    convert_dict = {
+        'Depth': float
+    }
+
+    df = df.astype(convert_dict)
+    df = df.dropna(how='all', axis=1)
+    df = df.round(4)
+    return df
+
+
+def read_convert_df(base_path, filepath):
+    print ('\n****** Reading', filepath)
+    # read the document and skip undefined number of unneeded rows
+    path = base_path + filepath
+
+    for n in range(1, 10):
+        #print('Attempt N', n)
         try:
-            df_all = pd.read_csv(path, skiprows=n, header=n-1, sep=';', decimal=',')
-            break
-        except:
-            pass
+
+            df_all = pd.read_csv(path, skiprows=n, header=n-1, sep=';', decimal=',', encoding = encoding)
+            if len(df_all.columns) < 10:
+                # print ('short', df_all.columns)
+                try:
+                    df_all = pd.read_csv(path, skiprows=n, header=n, sep=';', decimal=',', encoding = encoding)
+                    # print(df_all.columns)
+                    df_all.head()
+                    break
+                except Exception as e:
+                    # print('Exception 2', e)
+                    pass
+
+            else:
+                break
+        except Exception as e:
+            # print('Exception 1', e)
             df_all = None
 
-    if not df_all is None:
-        # rename columns
         try:
-            df_all = df_all.rename(columns={'Press': "Depth"})
-        except:
-            df_all = df_all.rename(columns={'Depth(u)': "Depth"})
+            df_all = pd.read_csv(path, skiprows=n, header=n-1, sep=';', decimal='.')
+            if len(df_all.columns) < 10:
+                print('short', df_all.columns)
+                try:
+                    df_all = pd.read_csv(path, skiprows=n, header=n, sep=';', decimal=',')
+                    print(df_all.columns)
+                    df_all.head()
+                    break
+                except Exception as e:
+                    # print('Exception 4', e)
+                    pass
+        except Exception as e:
+            # print('Exception 3', e)
+            df_all = None
 
-        # Change datatypes to float
-        convert_dict = {
-            'Depth': float
-        }
-        df_all = df_all.astype(convert_dict)
-        df_all = df_all.dropna(how='all', axis=1)
-        df_all = df_all.round(4)
-        return df_all
-    else:
-        print('could not read the file')
+    return df_all
 
 
-def match_stations_by_depth(group, region, base_path):
+def add_metadata_header(filename, header):
+    dummy_file = 'dummy_file.csv'
+    with open(filename, 'r') as read_obj, open(dummy_file, 'w') as write_obj:
+        write_obj.write(header)
+        for line in read_obj:
+            write_obj.write(line)
+    os.remove(filename)
+    os.rename(dummy_file, filename)
 
-    # Find the max depth in each group
-    max_depth = np.max(group['Depth'])
+
+def match_stations_by_depth(group,base_path,servey, stations_depths, stations_list):
+    print(' ')
 
     # Get number of the cast
-    Ser = group.Ser.values[0]
+    Ser = group['Ser'].values[0]
 
-    stations_info = stations_dict[region]
+    # Find the max depth of the group (this cast)
+    max_depth = np.max(group['Depth'])
 
     # find the closest depth in the arr with all stations for this region
+    difs = stations_depths - max_depth
+    sqr_difs = np.sqrt(difs**2)
+    min_dif = np.min(sqr_difs)
 
-    difs = stations_info['depths'].values - max_depth
-    print ('difs', difs)
-    difs = difs[np.where(difs > 0)]
-    print ('difs positive', difs)
-    min_dif = min(difs)
-    print (min_dif)
     if min_dif < 25:
+        nearest_depth_id = np.where(sqr_difs == min_dif)[0][0]
+        print ('nearest_depth_id', nearest_depth_id)
 
-        # Find the station with the closest depth
-        nearest_depth_id = np.where(difs == min_dif)[0][0]
-        df_matched_st = stations_info.where(
-                stations_info['depths'] == stations_info['depths'].values[nearest_depth_id]).dropna()
-        station_name = df_matched_st['st_names'].values[0]
-        
-        print (' ')
+        station_name = stations_list[nearest_depth_id]
+        station_metadata = serveys_lookup_table[servey][station_name]
+
         print('max depth', max_depth)
         print('min difference', min_dif)
         print(station_name)
 
         filename = base_path + "\\" + station_name + '_autogenerated.txt'
+        group.to_csv(filename, index=False, sep=';')
+        add_metadata_header(filename, station_metadata['station.header'])
     else:
-        print (' ')
+
         print ('Was not able to find a matching station name')
-        print ('min difference', min_dif)
+        print('min difference', min_dif)
         print ('max depth is ', max_depth)
-
+        print ('available station depths',stations_depths)
         filename = base_path + r'\\Unknown_station' + str(Ser) + '_autogenerated.txt'
+        group.to_csv(filename, index=False, sep=';')
 
-    group.to_csv(filename, index=False, sep = ';')
+    return
 
-def process_station(base_path, file_path,region):
-    df_all = read_convert_df(base_path, file_path)
-    df_all.groupby('Ser').apply(match_stations_by_depth,  base_path=base_path, region=region)
 
+def process_station(base_path, filepath, servey):
+
+    stations_list = list(serveys_lookup_table[servey].keys())
+    stations_depths = np.array([serveys_lookup_table[servey][d]['depth'] for d in stations_list])
+
+    df_all = read_convert_df(base_path, filepath)
+
+    if not df_all is None:
+        df_all = modify_df(df_all)
+        df_all.groupby('Ser').apply(match_stations_by_depth,  base_path=base_path,
+                                    servey=servey, stations_depths=stations_depths,
+                                    stations_list=stations_list)
+    else:
+        print('Error in reading the dataframe')
 
 if __name__ == "__main__":
+
+    #'K:\Avdeling\214 - Oseanografi\DATABASER\OKOKYST_2017\OKOKYST_NS_Nord_Leon\t25_Jan2019_Saiv_Leon'
+    #file_path = "\O-200075_20200913_SAIV_LEON.txt"
+
+
     work_dir = r"C:\Users\ELP\PycharmProjects\okokyst_split_files.py\\"
 
+    tests = {'1': {
+                    'base_path': work_dir + r'2018-03-13 CTD data',
+                    'filepath': r'\O-18075_20180313_Leon.txt',
+                    "servey" :'Sognefjorden'
+             },
+        '2': {
+            'base_path': work_dir + r"\2017-02-20\2017-02-20 CTD data\\",
+            'filepath': r'2017-02-20 hardanger_salt.txt',
+            "servey": 'Hardangerfjorden'
+        },
+    }
+    for key in tests.keys():
+        process_station(base_path=tests[key]['base_path'],
+                        filepath=tests[key]['filepath'],
+                        servey=tests[key]['servey'])
 
-    #process_station(base_path=work_dir+r"\2017-02-20\2017-02-20 CTD data\\",
-    #                file_path=r'2017-02-20 hardanger_salt.txt',
-    #                region='hardanger')
-
-    #process_station(base_path=work_dir + r'2018-03-13 CTD data',
-    #                file_path=r'\O-18075_20180313_Leon.txt',
-    #                region='sognefjorden')
-
-
-    process_station(base_path=work_dir + r'2018-04-15 CTD data',
-                    file_path=r"\\O-18075_20180415_Leon.txt",
-                    region='sognefjorden')
