@@ -83,6 +83,7 @@ def createNewFile(filename, station, CTDConfig):
     infile.close()
     return newfilename
 
+
 def pressure_to_depth(P, lat):
     """Compute depth from pressure and latitude
     Usage: depth(P, lat)
@@ -116,6 +117,7 @@ def pressure_to_depth(P, lat):
 # After identifying correct folder, find the txt file
 def locateFile(basepath, subStation):
     filename = "%s/%s.txt" % (basepath, subStation)
+    ####print (filename)
     if os.path.isfile(filename):
         return filename
 

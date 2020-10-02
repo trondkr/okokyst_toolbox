@@ -21,7 +21,7 @@ __status__ = "Development"
 __history__ = "Converted from version by by Anna Birgitta Ledang, NIVA"
 
 class StationExcel:
-    def open_excel_file(self,filename, sheet_name):
+    def open_excel_file(self, filename, sheet_name):
       
         if os.path.exists(filename): 
             os.remove(filename)
@@ -34,9 +34,9 @@ class StationExcel:
         if not os.path.exists('xlsfiles/{}'.format(CTDConfig.survey)):
             Path('xlsfiles/{}'.format(CTDConfig.survey)).mkdir(parents=True, exist_ok=True)
 
-        return "xlsfiles/{}/{}_CTD.xlsx".format(CTDConfig.survey,self.name)
+        return "xlsfiles/{}/{}_CTD.xlsx".format(CTDConfig.survey, self.name)
                     
-    def write_station_to_excel(self,CTDConfig):
+    def write_station_to_excel(self, CTDConfig):
         filename = self.get_excel_filename(CTDConfig)
         sheet_name = 'Rådata'
         pbar = progressbar.ProgressBar(max_value=len(self.depth), redirect_stdout=True).start()
@@ -69,29 +69,29 @@ class StationExcel:
                 print("EMPTY DATA ADDED FOR STATION {}".format(self.name))
             else:
                # print("Writing data to file {}".format(dat[0]))
-                df = pd.DataFrame({'ProjectName':projname,
-                                    'StationCode':statcode,
-                                    'Date':dat,
-                                    'Depth1':depth1,
-                                    'Depth2':depth2,
-                                    'Saltholdighet':self.sectionSA[station_index,:],
-                                    'Temperatur':self.sectionTE[station_index,:],
-                                    'Oksygen':self.sectionOX[station_index,:],
-                                    'Oksygenmetning':self.sectionOXS[station_index,:],
-                                    'Metode':mtd})
+                df = pd.DataFrame({'ProjectName': projname,
+                                    'StationCode': statcode,
+                                    'Date': dat,
+                                    'Depth1': depth1,
+                                    'Depth2': depth2,
+                                    'Saltholdighet': self.sectionSA[station_index,:],
+                                    'Temperatur': self.sectionTE[station_index,:],
+                                    'Oksygen': self.sectionOX[station_index,:],
+                                    'Oksygenmetning': self.sectionOXS[station_index,:],
+                                    'Metode': mtd})
                 
                 # Replace nans with missing value
                 df=df.fillna(missing_value)
                 
                 if first:
                     print("Writing data to file {}".format(filename))
-                    writer=self.open_excel_file(filename,sheet_name)
-                    first=False
+                    writer = self.open_excel_file(filename,sheet_name)
+                    first = False
                     
                 # write out the data to file
                 
                 df.to_excel(writer, sheet_name, startrow=startrow, header=header)
-                startrow=writer.book[sheet_name].max_row
+                startrow = writer.book[sheet_name].max_row
                 header=False
              
                 # save the workbook

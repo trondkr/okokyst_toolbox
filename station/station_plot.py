@@ -63,19 +63,25 @@ class StationPlot:
                 "oxsat": self.sectionOXS}[varname]
 
     # Save figures to file depending on what sort of plot (plot_type)   
-    def save_to_file(self, CTDConfig, var_name, plot_type, selected_depth=None, dateObjectStart=None,
+    def save_to_file(self, CTDConfig, var_name, plot_type, work_dir, selected_depth=None, dateObjectStart=None,
                      dateObjectEnd=None):
-        if not os.path.exists('figures/{}'.format(CTDConfig.survey)):
-            os.mkdir('figures/{}'.format(CTDConfig.survey))
+        figures_path = os.path.join(work_dir,'figures', CTDConfig.survey)
+        if not os.path.isdir(figures_path):
+            os.makedirs(figures_path)
+
         if plot_type == "timeseries":
-            plotfileName = "figures/{}/timeseries-{}-{}-{}-to-{}.png".format(CTDConfig.survey,
-                                                                             self.name,
-                                                                             var_name,
-                                                                             dateObjectStart.strftime("%Y%m%d"),
-                                                                             dateObjectEnd.strftime("%Y%m%d"))
+
+            start = dateObjectStart.strftime("%Y%m%d")
+            stop = dateObjectEnd.strftime("%Y%m%d")
+            filename = f"timeseries-{self.name}-{var_name}-{start}-to-{stop}.png"
+
+
         else:
-            plotfileName = "figures/{}/{}-{}-{}-{}m.png".format(CTDConfig.survey, plot_type, self.name, var_name,
-                                                                selected_depth)
+            filename = f"{plot_type}-{self.name}-{var_name}-{selected_depth}.png"
+
+        plotfileName = os.path.join(figures_path, filename)
+
+
         if os.path.exists(plotfileName): os.remove(plotfileName)
         print("Saving time series to file {}".format(plotfileName))
         plt.savefig(plotfileName, dpi=300, bbox_inches='tight')
@@ -242,7 +248,7 @@ class StationPlot:
                                   selected_depth=str(selected_depth))
             plt.clf()
 
-    def createTimeseriesPlot(self, CTDConfig):
+    def createTimeseriesPlot(self, CTDConfig, work_dir):
 
         dates = [num2date(jd, units=CTDConfig.refdate, calendar="standard") for jd in self.julianDay]
 
@@ -353,7 +359,7 @@ class StationPlot:
                 ax[0].set_title(specs["title"])
 
             plt.tight_layout()
-            self.save_to_file(CTDConfig, var_name, 'annual_variability', selected_depth=str(selected_depth))
+            self.save_to_file(CTDConfig, var_name, 'annual_variability', work_dir, selected_depth=str(selected_depth))
 
     def createContourPlots(self, CTDConfig):
         xticklabels = []
