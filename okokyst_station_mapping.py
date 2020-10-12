@@ -163,9 +163,15 @@ class processStation(object):
         if 'Salinity' not in group.columns:
             group = self.calc_salinity(group)
         if self.servey == 'Hardangerfjorden':
-            dif_threshold = 25
+            dif_threshold = 40
         else:
             dif_threshold = 50
+
+        group=group.drop(columns=['Press'])
+        columnOrder=['Ser','Meas','Salinity','Conductivity', 'Temp', 'FTU',
+                       'OptOx', 'OxMgL', 'Density', 'Depth', 'Date', 'Time']
+        group=group.reindex(columns=columnOrder)
+
         if min_dif < dif_threshold:
             nearest_depth_id = np.where(sqr_difs == min_dif)[0][0]
             self.station_name = self.stations_list[nearest_depth_id]
@@ -179,12 +185,6 @@ class processStation(object):
             self.filename = os.path.join(self.base_path, self.station_name + '.txt')
 
 
-
-            group=group.drop(columns=['Press'])
-
-            columnOrder=['Ser','Meas','Salinity','Conductivity', 'Temp', 'FTU',
-                           'OptOx', 'OxMgL', 'Density', 'Depth', 'Date', 'Time']
-            group=group.reindex(columns=columnOrder)
             group.to_csv(self.filename, index=False, sep=';')
 
             #Add header and save update file in the new location
@@ -236,9 +236,9 @@ class processStation(object):
 
         date_folder = pd.to_datetime(str(self.servey_date)).strftime('%Y-%m-%d')
 
-        user = r'C:\Users\ELP\OneDrive - NIVA\Documents\Projects\\'
 
-        self.new_base_path = os.path.join(user, "OKOKYST\ØKOKYST_NORDSJØENNORD_CTD", self.servey, date_folder, date_folder + " CTD data")
+
+        self.new_base_path = os.path.join(onedrive, self.servey, date_folder, date_folder + " CTD data")
 
         if not os.path.exists(self.new_base_path):
             os.makedirs(self.new_base_path)
@@ -253,35 +253,70 @@ class processStation(object):
             for line in read_obj:
                 write_obj.write(line)
 
-        # os.remove(filename)
-        # os.rename(dummy_file, filename)
+
+
+def manual_add_metadata_header(filepath, station_name):
+    t = serveys_lookup_table
+    base_path = os.path.split(filepath)[0]
+
+    print (base_path)
+    serveys = t.keys()
+    for key in serveys:
+        if station_name in t[key]:
+            header = t[key][station_name]['station.header']
+            break
+    print(header)
+
+    new_filename = os.path.join(base_path, station_name + '.txt')
+
+    # Open initial file, update header, save the new file in One_Drive
+    with open(filepath, 'r') as read_obj, open(new_filename, 'w') as write_obj:
+        write_obj.write(header)
+        for line in read_obj:
+            write_obj.write(line)
+
+    os.rename(filepath, filepath[:-4]+f'to_{station_name}.txt')
+
+def process_all_2020(task):
+    if task == "sognefjorden":
+        main_folder = os.path.join(k_work_dir, 'OKOKYST_NS_Nord_Leon')
+        files = [f for f in os.listdir(main_folder) if re.search('2020_saiv_leon', f, re.IGNORECASE)]
+    elif task == "hardangerfjorden":
+        main_folder = os.path.join(k_work_dir, "OKOKYST_NS_Nord_Kvitsoy")
+        files = [r"K:\Avdeling\214-Oseanografi\DATABASER\OKOKYST_2017\OKOKYST_NS_Nord_Kvitsoy\t45_2020-08-24"]
+        # print(glob.glob(r"K:\Avdeling\214-Oseanografi\DATABASER\OKOKYST_2017\OKOKYST_NS_Nord_Kvitsoy\t45_2020-08-24"))
+
+    for file in files:
+        file_path = os.path.join(main_folder, file)
+
+        if task == "sognefjorden":
+            subfiles = glob.glob(file_path + '/**/*.txt', recursive=True)
+            txtfiles = [f for f in subfiles if re.search('saiv_leon.txt', f, re.IGNORECASE)]
+        elif task == "hardangerfjorden":
+            subfiles = glob.glob(file_path + '/**/*.txt', recursive=True)
+            txtfiles = [f for f in subfiles if re.search('txt', f, re.IGNORECASE)]
+
+        non_assigned = []
+        if len(txtfiles) > 0:
+            input_path = txtfiles[0]
+            print(input_path)
+            d = processStation(input_path)
+            non_assigned.append(d.non_assigned)
+        print('non_assigned paths', non_assigned)
 
 
 if __name__ == "__main__":
 
-    #k_work_dir = r'K:/Avdeling/214-Oseanografi/DATABASER/OKOKYST_2017/OKOKYST_NS_Nord_Leon/t46_Sept2020_Saiv_Leon'
-    main_folder = 'K:/Avdeling/214-Oseanografi/DATABASER/OKOKYST_2017/OKOKYST_NS_Nord_Leon'
+    k_work_dir = r'K:/Avdeling/214-Oseanografi/DATABASER/OKOKYST_2017/'
+    onedrive = r'C:\Users\ELP\OneDrive - NIVA\Documents\Projects\\OKOKYST\ØKOKYST_NORDSJØENNORD_CTD'
+
+    task = "hardangerfjorden"
+
+    #process_all_2020(task)
+
+    #processStation(os.path.join(k_work_dir, r"OKOKYST_NS_Nord_Kvitsoy\t46_2020_09_21\Kvitsøy_2020-09-21 og 22.txt"))
 
 
-    files2020 = [f for f in os.listdir(main_folder) if re.search('2020_saiv_leon', f, re.IGNORECASE)]
-    files = files2020
-
-    print (files2020)
-
-
-    for file in files:
-
-        file_path = os.path.join(main_folder, file)
-
-        subfiles = glob.glob(file_path + '/**/*.txt', recursive=True)
-        txtfiles = [f for f in subfiles if re.search('saiv_leon.txt', f, re.IGNORECASE)]
-        non_assigned = []
-        if len(txtfiles) > 0:
-            input_path = txtfiles[0]
-            d = processStation(input_path)
-            non_assigned.append(d.non_assigned)
-        print ('non_assigned paths', non_assigned)
-
-    #file_path = "K:/Avdeling/214-Oseanografi/DATABASER/OKOKYST_2017/OKOKYST_NS_Nord_Leon/t46_Sept2020_Saiv_Leon/O-200075_20200913_SAIV_LEON.txt"
-    #input_path =  k_work_dir + file_path # r'K:/Avdeling/214-Oseanografi/DATABASER/OKOKYST_2017/OKOKYST_NS_Nord_Leon/t46_Sept2020_Saiv_Leon'
-
+    fpath = os.path.join(onedrive, r'Hardangerfjorden\2020-09-21\2020-09-21 CTD data\Unknown_station1.txt')
+    name = 'VT69'
+    manual_add_metadata_header(fpath, name)
