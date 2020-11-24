@@ -284,6 +284,7 @@ ctd_config = {
 
 def main(surveys, months, CTDConfig):
     for survey in surveys:
+
         CTDConfig.survey = survey
         CTDConfig.useDowncast = ctd_config[survey]['useDowncast']
 
@@ -320,8 +321,8 @@ def main(surveys, months, CTDConfig):
             projectname = 'OKOKYST Nordsjoen Nord'
             subStations = ["VT70", "VT69", "VT74", "VT53", "VT52", "VT75"]
             stationid = ["68910", "68908", "68913", "68911", "69164", "69165"]
-            subStations = ["VT75"]
-            stationid = ["69165"]
+            #subStations = ["VT75"]
+            #stationid = ["69165"]
 
         if CTDConfig.survey == "Sognefjorden":
             basepath = os.path.join(work_dir, 'ØKOKYST_NORDSJØENNORD_CTD/Sognefjorden')
@@ -404,10 +405,10 @@ if __name__ == "__main__":
     work_dir = r"C:\Users\ELP\OneDrive - NIVA\Documents\Projects\OKOKYST"
 
     # EDIT
-    surveys = ["Sognefjorden"]
+    #surveys = ["Sognefjorden"]
     #"Hardangerfjorden",
     #surveys = ["Soerfjorden", "MON"]
-    #surveys = ["Hardangerfjorden"]
+    surveys = ["Hardangerfjorden"]
 
     months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
 

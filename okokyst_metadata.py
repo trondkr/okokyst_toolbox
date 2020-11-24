@@ -78,7 +78,8 @@ serveys_lookup_table = {
             "station.header": "STATION;VT169;Korsfjorden;60.1788;5.2393\n",
             "station.longitude": 5.2393,
             "station.latitude": 60.1788,
-            "depth": 672.0},
+            "depth": 50.0,
+            "comment": "672 is a real depth but kvitsoy sample only until 50"},
         "VT70": {
             "station.header": "STATION;VT170;Bjornafjorden;60.1043;5.4742\n",
             "station.longitude": 5.4742,
