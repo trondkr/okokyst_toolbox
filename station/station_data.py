@@ -60,8 +60,6 @@ class StationData:
         return max_depth
 
 
-
-
     def special_MON_cases_where_oxygen_already_in_mlOL(self, CTDConfig, current_date, d):
         # Special cases first
         if current_date.year in [2018] and current_date.month in [9] and self.name in ['OKS2']:
@@ -82,6 +80,7 @@ class StationData:
 
         self.Y = np.arange(0, max_depth, 1)
         self.X = np.arange(0, len(self.julianDay), 1)
+
         stDates = num2date(self.julianDay[:], units=CTDConfig.refdate, calendar="standard")
 
         self.sectionTE = np.ma.masked_all((len(self.X), len(self.Y)))
