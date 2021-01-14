@@ -8,7 +8,9 @@ import pandas as pd
 import progressbar
 import openpyxl
 import pandas as pd
-        
+
+import cftime
+
 # Local files
 import ctdConfig as CTDConfig
 
@@ -50,9 +52,14 @@ class StationExcel:
         
         for station_index, de in enumerate(self.depth):
             pbar.update(station_index+1)
-            dateObject = num2date(self.julianDay[station_index], units=CTDConfig.refdate, calendar="standard")
-            excl = datetime.datetime.strptime('1900-01-01','%Y-%M-%d').toordinal()    
+            d = num2date(self.julianDay[station_index], units=CTDConfig.refdate, calendar="standard")
+            excl = datetime.datetime.strptime('1900-01-01','%Y-%M-%d').toordinal()
+
+            if isinstance(d, cftime.DatetimeGregorian):
+                dateObject = datetime.datetime(d.year, d.month, d.day, d.hour, d.minute, d.second)
+
             d_num = dateObject.toordinal()
+            print("Date", d_num, dateObject)
             date_num = d_num - (excl-2)
 
             projname = []; statcode = []; mtd = []; dat = []

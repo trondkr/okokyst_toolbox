@@ -27,7 +27,7 @@ __status__ = "Development"
 # OKOKYST_TOOLBOX INFO:
 #
 # To make use of this toolbox you also need to install python-ctd package. 
-# In the source code for python-ctd localte the folder ctd/read.py and replace the content with the content 
+# In the source code for python-ctd locate the folder ctd/read.py and replace the content with the content
 # of file functionSAIV.py. Then recompile and install the python-ctd module using:
 # cd python-ctd
 # python setup.py develop
@@ -50,11 +50,12 @@ __status__ = "Development"
 # Main function that calls ctd module and reads the individual SAIV data and stores each cast
 # as one station cast object in an array of stations.
 def qualityCheckStation(filename, dateObject, station, CTDConfig):
-    if CTDConfig.debug:
-        print("=> Opening input file: %s" % (filename))
+   # if CTDConfig.debug:
+      #  print("=> Opening input file: %s" % (filename))
 
     cast, metadata = ctd.from_saiv(filename)
     downcast, upcast = cast.split()
+
     if station.name in ["OKS2"] and dateObject.year == 2019:
         upcast = downcast
 
@@ -62,7 +63,7 @@ def qualityCheckStation(filename, dateObject, station, CTDConfig):
         if CTDConfig.useDowncast:
             downcast_copy = downcast.copy()
 
-            downcast_copy['dz/dtM'] = movingaverage(downcast['dz/dtM'], window_size=2)
+            downcast_copy['dz/dtM'] = movingaverage(downcast['dz/dtM'], window_size=1)
             downcast['dz/dtM'].loc[downcast_copy['dz/dtM'] == np.nan].fillna(0)
             downcast['dz/dtM'].replace([np.inf, -np.inf], 0.5)
 
@@ -257,7 +258,7 @@ def addHistoricalData(station, CTDConfig):
 def createContours(stationsList, CTDConfig):
     for station in stationsList:
         station.createTimeSection(CTDConfig)
-        station.createContourPlots(CTDConfig)
+        station.createContourPlots(CTDConfig,work_dir)
 
 def createHistoricalTimeseries(stationsList, CTDConfig):
     for station in stationsList:
@@ -349,29 +350,32 @@ def main(surveys, months, CTDConfig):
             for i, folder in enumerate(subdirectories):
                 pbar.update(i + 1)
                 if okokyst_tools.locateDir(os.path.join(basepath, folder)):
-                    dirLevel2 = os.path.join(basepath, folder, folder + " CTD data")
+                    dirLevel2 = os.path.join(basepath, folder, folder + "-CTD-data")
                     if okokyst_tools.locateDir(dirLevel2):
-                        print(folder, 'folder')
+
                         dateObject = datetime.strptime(folder, '%Y-%m-%d')
                         strmonth = str(dateObject.strftime("%b"))
 
                         if strmonth in months:
                             filename = okokyst_tools.locateFile(dirLevel2, subStation)
 
-                            if CTDConfig.debug:
-                                print("=> Identified correct file: {} for month {}".format(filename, strmonth))
+                          #  if CTDConfig.debug:
+                              #  print("=> Identified correct file: {} for month {}".format(filename, strmonth))
 
                             if filename != None:
                                 bb = os.path.basename(filename)
                                 filestation = os.path.splitext(bb)
 
-                                if filestation[0] in subStations:
+                                st = filestation[0].replace("_edited","")
+
+                                if st in subStations:
                                     #newfilename = okokyst_tools.createNewFile(filename, station, CTDConfig)
                                     qualityCheckStation(filename, dateObject, station, CTDConfig)
         pbar.finish()
         for st in stationsList:
             if CTDConfig.describeStation:
                 st.describeStation(CTDConfig)
+
             if CTDConfig.createTSPlot:
                 st.plotStationTS(survey)
 
@@ -399,16 +403,14 @@ def main(surveys, months, CTDConfig):
 
 if __name__ == "__main__":
 
-
-
-    #work_dir = "/Users/trondkr/Dropbox/"
-    work_dir = r"C:\Users\ELP\OneDrive - NIVA\Documents\Projects\OKOKYST"
+    work_dir = "/Users/trondkr/Dropbox/"
+    #work_dir = r"C:\Users\ELP\OneDrive - NIVA\Documents\Projects\OKOKYST"
 
     # EDIT
     #surveys = ["Sognefjorden"]
     #"Hardangerfjorden",
-    #surveys = ["Soerfjorden", "MON"]
-    surveys = ["Hardangerfjorden"]
+    surveys = ["Soerfjorden"] #, "MON"]
+    #surveys = ["Hardangerfjorden"]
 
     months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
 
@@ -423,7 +425,7 @@ if __name__ == "__main__":
     CTDConfig = CTDConfig.CTDConfig(createStationPlot=False,
                                     createTSPlot=False,
                                     createContourPlot=False,
-                                    createTimeseriesPlot=True,
+                                    createTimeseriesPlot=False,
                                     binDataWriteToNetCDF=False,
                                     describeStation=False,
                                     createHistoricalTimeseries=False,
@@ -436,7 +438,7 @@ if __name__ == "__main__":
                                     oxsatName='OptOx',
                                     refdate="seconds since 1970-01-01:00:00:00",
                                     selected_depths=selected_depths,
-                                    write_to_excel=False,
+                                    write_to_excel=True,
                                     conductivity_to_salinity=False,
                                     debug=True)
 

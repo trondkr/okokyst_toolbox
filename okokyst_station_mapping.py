@@ -37,7 +37,6 @@ def modify_df(df):
     convert_dict = {
         'Press': float
     }
-    print (type(df['Date'].values))
 
     try:
         df['Date'] = pd.to_datetime(df['Date'], format='%d.%m.%Y').dt.strftime('%d.%m.%Y')
@@ -78,7 +77,7 @@ class processStation(object):
 
             grouped = self.df_all.groupby('Ser')
             for name, group_df in grouped:
-                print (name)
+
                 self.match_stations_by_depth(group_df)
             #groups = [unused_df for name, unused_df in grouped]
             #print (groups)
