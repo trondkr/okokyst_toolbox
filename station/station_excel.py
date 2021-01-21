@@ -1,14 +1,9 @@
 import os
 import datetime
-import numpy as np
-import gsw
 from pathlib import Path
 from netCDF4 import date2num, num2date
-import pandas as pd
 import progressbar
-import openpyxl
 import pandas as pd
-
 import cftime
 
 # Local files
@@ -17,10 +12,10 @@ import ctdConfig as CTDConfig
 __author__ = 'Trond Kristiansen'
 __email__ = 'trond.kristiansen@niva.no'
 __created__ = datetime.datetime(2017, 2, 24)
-__modified__ = datetime.datetime(2019, 1, 15)
+__modified__ = datetime.datetime(2020, 1, 15)
 __version__ = "2.0"
 __status__ = "Development" 
-__history__ = "Converted from version by by Anna Birgitta Ledang, NIVA"
+__history__ = "Converted from version by Anna Birgitta Ledang, NIVA; Changed 15.01.2020 Trond Kristiansen"
 
 class StationExcel:
     def open_excel_file(self, filename, sheet_name):
@@ -28,8 +23,7 @@ class StationExcel:
         if os.path.exists(filename): 
             os.remove(filename)
         writer = pd.ExcelWriter(filename, engine='openpyxl')
-      #  writer.book.create_sheet(sheet_name,0)
-     
+
         return writer
 
     def get_excel_filename(self,CTDConfig):

@@ -1,8 +1,11 @@
+import os
+import sys
 from datetime import datetime
 from netCDF4 import date2num
 from pyniva import Vessel, TimeSeries, token2header
-
+import pandas as pd
 from ferrybox import ferryBoxStationClass as fb
+import csv
 
 __author__ = 'Trond Kristiansen'
 __email__ = 'trond.kristiansen@niva.no'
@@ -17,7 +20,7 @@ def setup_connection_to_nivadb():
     return token2header(token)
 
 
-def get_list_of_available_timeseries_for_vessel(vessel_name, vessel_abbreviation, start_date, end_date, variable):
+def get_list_of_available_timeseries_for_vessel(vessel_name, vessel_abbreviation, start_date, end_date, variable, use_raw=False):
     header = setup_connection_to_nivadb()
     meta_host = "https://api-test.niva.no/v1/metaflow/"
     tsb_host = "https://api-test.niva.no/v1/tsb/"
@@ -30,15 +33,16 @@ def get_list_of_available_timeseries_for_vessel(vessel_name, vessel_abbreviation
 
             # Get signals the vessel
             signals = v.get_all_tseries(meta_host, header=header)
-            #  for s in signals:
-            #      print(s.path)
 
             if variable == 'temperature':
                 db_path = "{}/ferrybox/INLET/TEMPERATURE".format(vessel_abbreviation)
             elif variable == 'salinity':
                 db_path = "{}/ferrybox/CTD/SALINITY".format(vessel_abbreviation)
             elif variable == 'chla_fluorescence':
-                db_path = "{}/ferrybox/CHLA_FLUORESCENCE/BIOF_CORR_AND_CALIB".format(vessel_abbreviation)
+                if not use_raw:
+                    db_path = "{}/ferrybox/CHLA_FLUORESCENCE/BIOF_CORR_AND_CALIB".format(vessel_abbreviation)
+                else:
+                    db_path = "{}/ferrybox/CHLA_FLUORESCENCE/RAW".format(vessel_abbreviation)
             elif variable == 'cdom_fluorescence':
                 db_path = "{}/ferrybox/CDOM_FLUORESCENCE/ADJUSTED".format(vessel_abbreviation)
             elif variable == 'turbidity':
@@ -74,15 +78,19 @@ def get_data_around_station(df, st_lon, st_lat, dist):
                 df['longitude'] < st_lon + 2 * dist)]
 
 
+def get_data_at_station_and_timestamp(df, st_lon, st_lat, timestamp):
+    # https://stackoverflow.com/questions/21415661/logical-operators-for-boolean-indexing-in-pandas
+    # Filter out the nearest observations in time from water sample
+    ind = df.index.get_loc(timestamp, method='nearest')
+
+    return df.index[ind], df.iloc[ind]
+
 def create_station(stationid, df, varname):
     metadata = ferrybox_metadata(stationid)
-
     # Get the data for the station
     df_st = get_data_around_station(df, metadata['longitude'], metadata['latitude'],metadata['dist'])
-
     # Create the station 
     return fb.FerryBoxStation(stationid, metadata, df_st, varname)
-
 
 def ferrybox_metadata(stationid):
     return \
@@ -241,9 +249,27 @@ def ferrybox_metadata(stationid):
                            'dist': 1.8, 'ybin_dist': 0.3},
          }[stationid]
 
+def get_water_sample_data(stationid, df_fb, writer):
+    file="2020/Oekokyst_FB_AQM_extract_2020.xlsx"
+    df = pd.read_excel(file, sheet_name="WaterChemistry")
+    df_id = df[df["StationCode"]==stationid]
 
-# MAIN 
+    metadata = ferrybox_metadata(stationid)
+    st_lon = metadata['longitude']
+    st_lat = metadata['latitude']
+
+    for sample_time, sample_klfa in zip(df_id["SampleDate"],df_id["KlfA µg/l"]):
+
+        sample_time = pd.to_datetime(sample_time)
+
+        fb_time, fb_df = get_data_at_station_and_timestamp(df_fb, st_lon, st_lat, sample_time)
+        line = stationid, st_lon, st_lat, sample_time, sample_klfa, fb_time, fb_df["raw_chla_fluorescence"], fb_df["longitude"], fb_df["latitude"]
+        writer.writerow(line)
+
+# MAIN
 def main():
+    ferrybox_calibration=True
+
     substations = ['Dk1', 'Im2', 'YO1',
                    'VT4', 'Oslofjorden', 'VT4',
                    'VT12', 'VT72', 'VT80',
@@ -254,15 +280,16 @@ def main():
                    'VR56', 'VR58',
                    'VR21', 'VT42', 'VR7-VR21-VR24']
     # removed VR55, VR59, VR7, VR24, VR52
-    substations = ['VR51']  # ,'VT22','VT22 ytre']
+    substations = ['VT4','VT76','VR23','VR25','VT80','VT45','VT22','VT23','VT72','VT12']  # ,'VT22','VT22 ytre']
 
     # substations = ['Oslofjorden','Dk1', 'Im2', 'YO1','VT4']
 
     varnames = ['chla_fluorescence', 'cdom_fluorescence', 'salinity', 'turbidity', 'temperature']
     varnames = ['chla_fluorescence']
 
-    start_date = datetime(2019, 1, 1)
-    end_date = datetime(2019, 12, 31)
+    start_date = datetime(2020, 1, 1)
+    end_date = datetime(2020, 12, 31)
+    first=True
 
     print("Starting contour plot creation for {} stations".format(len(substations)))
     for varname in varnames:
@@ -274,15 +301,36 @@ def main():
                                                                   metadata['vessel'],
                                                                   start_date,
                                                                   end_date,
-                                                                  varname)
+                                                                  varname,
+                                                                  use_raw=ferrybox_calibration)
 
-            station = create_station(stationid, tsbdata, varname)
-            station.start_date_jd = date2num(start_date, units=station.refdate, calendar="standard")
-            station.end_date_jd = date2num(end_date, units=station.refdate, calendar="standard")
+            if not ferrybox_calibration:
+                station = create_station(stationid, tsbdata, varname)
+                station.start_date_jd = date2num(start_date, units=station.refdate, calendar="standard")
+                station.end_date_jd = date2num(end_date, units=station.refdate, calendar="standard")
 
-            #  station.extract_calibration_data(varname)
-            print('Creating contour plot for {}'.format(stationid))
-            station.create_station_contour_plot()
+                #  station.extract_calibration_data(varname)
+                print('Creating contour plot for {}'.format(stationid))
+                station.create_station_contour_plot()
+            else:
+                if first is True:
+                    import csv
+                    infile="ferrybox_calibration_{}{}_to_{}{}.csv".format(start_date.year,
+                                                                             start_date.month,
+                                                                             end_date.year,
+                                                                             end_date.month)
+                    if os.path.exists(infile):
+                        os.remove(infile)
+
+                    csv_file = open(infile,"a", newline="")
+
+                    writer = csv.writer(csv_file, delimiter=',')
+                    header = "StationID", "OBS_LON", "OBS_LAT", "OBS_TIME", \
+                             "OBS_KLFA", "FB_TIME", "FB_KLFA", "FB_LON", "FB_LAT"
+                    writer.writerow(header)
+                    first=False
+
+                get_water_sample_data(stationid, tsbdata, writer)
 
 
 if __name__ == '__main__':
