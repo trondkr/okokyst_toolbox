@@ -26,20 +26,33 @@ class FerryBoxStation:
         self.df_st = df_st
         self.df_st_grouped = None
         self.refdate = "days since 1970-01-01:00:00:00"
-        self.bin_days = 23
+        self.bin_days = 19
         self.stationid = stationid
         self.basedir = '../FBdata/'
         self.start_date_jd = None
         self.end_date_jd = None
         # The distance to extract data in decomal degrees surrouding the station
         self.dist = metadata['dist']
-        # The bin distance in decimal degrees for y-axis data.
-        self.ybin_dist = metadata['ybin_dist']
+        if metadata["vessel"] == "FA":
+            self.ybin_dist = 0.05
+            if stationid in ["VT3"]:
+                self.ybin_dist = 0.05
+                self.bin_days = 20
+            #self.ybin_dist = metadata['ybin_dist']
+
+        if metadata["vessel"] == "TF":
+            if metadata["name"] in ["Barentshavet"]:
+                self.ybin_dist = 0.13
+            else:
+                self.ybin_dist = 0.035
+                if stationid in ["VR25", "VR23", "VT45", "VT22", "VT76"]:
+                    self.ybin_dist=0.05
+                    self.bin_days=23
+
         # Defines whether y-axis is longitude or latitude
         self.plot_along_latitude = metadata['plot_along_latitude']
 
         self.description()
-
         self.calculate_julianday()
         self.create_grouped_dataframe()
 
@@ -50,13 +63,20 @@ class FerryBoxStation:
 
     def calculate_julianday(self):
         df2 = self.df_st.copy()
-        df2['julianday'] = date2num(self.df_st.index.to_pydatetime(), units=self.refdate, calendar="standard")
+
+        if isinstance(self.df_st.index, pd.Int64Index):
+            df2['julianday'] = date2num(pd.DatetimeIndex(self.df_st.time).to_pydatetime(), units=self.refdate,
+                                        calendar="standard")
+        else:
+            df2['julianday'] = date2num(self.df_st.index.to_pydatetime(), units=self.refdate, calendar="standard")
         self.df_st = df2
 
     def bin_dataframe(self):
-        x_bins = pd.cut(self.df_st_grouped.julianday, np.arange(self.start_date_jd + self.bin_days,
-                                                                self.end_date_jd - self.bin_days,
-                                                                self.bin_days))
+
+        x_bins = pd.cut(self.df_st_grouped.julianday, np.arange(self.start_date_jd,
+                                                                self.end_date_jd,
+                                                                self.bin_days),
+                        right=True, include_lowest=True)
 
         if not self.plot_along_latitude:
             y_bins = pd.cut(self.df_st_grouped.longitude, np.arange(self.df_st_grouped.longitude.min(),
@@ -107,15 +127,15 @@ class FerryBoxStation:
                 'chla_fluorescence': 'Klorofyll a fluorescens (\u03bcg/L)'}[self.varname]
 
     def get_varname_maxrange(self):
-        return {'temperature': 20,
-                'salinity': 35.5,
+        return {'temperature': 22,
+                'salinity': 36,
                 'cdom_fluorescence': 3.0,
                 'turbidity': 25.0,
-                'chla_fluorescence': 5.0}[self.varname]
+                'chla_fluorescence': 3.5}[self.varname]
 
     def get_varname_minrange(self):
         return {'temperature': 0,
-                'salinity': 28,
+                'salinity': 20,
                 'cdom_fluorescence': 0.0,
                 'turbidity': 0.0,
                 'chla_fluorescence': 0.0}[self.varname]
@@ -172,8 +192,8 @@ class FerryBoxStation:
                                                             self.varname,
                                                             self.name,
                                                             self.varname,
-                                                            date_start,
-                                                            date_end)
+                                                            date_start.year,
+                                                            date_end.year)
         if date_start.year < date_end.year:
             plotfileName += '_multiyear'
         plotfileName += '.png'

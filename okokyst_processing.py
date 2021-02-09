@@ -320,10 +320,9 @@ def main(surveys, months, CTDConfig):
             projectid = '10526'
             method = 'Saiv CTD s/n 1270'
             projectname = 'OKOKYST Nordsjoen Nord'
-            subStations = ["VT70", "VT69", "VT74", "VT53", "VT52", "VT75"]
-            stationid = ["68910", "68908", "68913", "68911", "69164", "69165"]
-            #subStations = ["VT75"]
-            #stationid = ["69165"]
+            subStations_before_2020 = ["VT70", "VT69", "VT74", "VT53", "VT52", "VT75"]
+            subStations = ["VT70", "VT69", "VT74", "VT53"]
+            stationid = ["68910", "68908", "68913", "68911"]
 
         if CTDConfig.survey == "Sognefjorden":
             basepath = os.path.join(work_dir, 'ØKOKYST_NORDSJØENNORD_CTD/Sognefjorden')
@@ -350,7 +349,11 @@ def main(surveys, months, CTDConfig):
             for i, folder in enumerate(subdirectories):
                 pbar.update(i + 1)
                 if okokyst_tools.locateDir(os.path.join(basepath, folder)):
-                    dirLevel2 = os.path.join(basepath, folder, folder + "-CTD-data")
+                    if survey in ["Soerfjorden"]:
+                        dirLevel2 = os.path.join(basepath, folder, folder + "-CTD-data")
+                    else:
+                        dirLevel2 = os.path.join(basepath, folder, folder + " CTD data")
+                    print(dirLevel2)
                     if okokyst_tools.locateDir(dirLevel2):
 
                         dateObject = datetime.strptime(folder, '%Y-%m-%d')
@@ -359,8 +362,8 @@ def main(surveys, months, CTDConfig):
                         if strmonth in months:
                             filename = okokyst_tools.locateFile(dirLevel2, subStation)
 
-                          #  if CTDConfig.debug:
-                              #  print("=> Identified correct file: {} for month {}".format(filename, strmonth))
+                            if CTDConfig.debug:
+                                print("=> Identified correct file: {} for month {}".format(filename, strmonth))
 
                             if filename != None:
                                 bb = os.path.basename(filename)
@@ -389,6 +392,7 @@ def main(surveys, months, CTDConfig):
                 st.write_station_to_excel(CTDConfig)
 
         if CTDConfig.createContourPlot:
+            print("Create contours")
             createContours(stationsList, CTDConfig)
 
         if CTDConfig.createHistoricalTimeseries:
@@ -408,9 +412,9 @@ if __name__ == "__main__":
 
     # EDIT
     #surveys = ["Sognefjorden"]
-    #"Hardangerfjorden",
-    surveys = ["Soerfjorden"] #, "MON"]
-    #surveys = ["Hardangerfjorden"]
+    #"Hardangerfjorden","MON"
+    surveys = ["Hardangerfjorden", "Sognefjorden"]
+    surveys = ["Soerfjorden"]
 
     months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
 
@@ -424,7 +428,7 @@ if __name__ == "__main__":
 
     CTDConfig = CTDConfig.CTDConfig(createStationPlot=False,
                                     createTSPlot=False,
-                                    createContourPlot=False,
+                                    createContourPlot=True,
                                     createTimeseriesPlot=False,
                                     binDataWriteToNetCDF=False,
                                     describeStation=False,

@@ -27,7 +27,7 @@ class FormatScalarFormatter(matplotlib.ticker.ScalarFormatter):
     def _set_format(self):
         self.format = self.fformat
         if self._useMathText:
-            self.format = '$%s$' % matplotlib.ticker._mathdefault(self.format)
+            self.format = r'$\mathdefault{%s}$' % self.format
 
 
 class StationPlot:
@@ -91,9 +91,12 @@ class StationPlot:
         if float(max_depth) > 250:
             ax.set_ylim(-250, 0)
             depthindex = np.where(Y == 250)[0][0]
-        elif 100 < float(max_depth) < 190:
-            ax.set_ylim(-150, 0)
-            depthindex = np.where(Y == 150)[0][0]
+        elif 150 < float(150) < 190:
+            ax.set_ylim(150, 0)
+            depthindex = np.where(Y == max_depth)[0][0]
+        elif 120 < float(120) < 150:
+            ax.set_ylim(120, 0)
+            depthindex = np.where(Y == max_depth)[0][0]
         else:
             depthindex = -1
 

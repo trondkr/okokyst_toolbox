@@ -20,7 +20,8 @@ def setup_connection_to_nivadb():
     return token2header(token)
 
 
-def get_list_of_available_timeseries_for_vessel(vessel_name, vessel_abbreviation, start_date, end_date, variable, use_raw=False):
+def get_list_of_available_timeseries_for_vessel(vessel_name, vessel_abbreviation, start_date, end_date, variable,
+                                                use_raw=False):
     header = setup_connection_to_nivadb()
     meta_host = "https://api-test.niva.no/v1/metaflow/"
     tsb_host = "https://api-test.niva.no/v1/tsb/"
@@ -85,12 +86,19 @@ def get_data_at_station_and_timestamp(df, st_lon, st_lat, timestamp):
 
     return df.index[ind], df.iloc[ind]
 
+
 def create_station(stationid, df, varname):
     metadata = ferrybox_metadata(stationid)
     # Get the data for the station
-    df_st = get_data_around_station(df, metadata['longitude'], metadata['latitude'],metadata['dist'])
-    # Create the station 
+    if not metadata["plot_along_latitude"]:
+        df_st = get_data_around_station(df, metadata['longitude'], metadata['latitude'], 0.2)
+    else:
+        df_st = get_data_around_station(df, metadata['longitude'], metadata['latitude'], metadata['dist'])
+   # import numpy as np
+
+    # Create the station
     return fb.FerryBoxStation(stationid, metadata, df_st, varname)
+
 
 def ferrybox_metadata(stationid):
     return \
@@ -111,28 +119,29 @@ def ferrybox_metadata(stationid):
          'VT80': {'name': 'Djupfest', 'latitude': 63.76542, 'longitude': 9.52296,
                   'vessel': 'TF',
                   'vessel_name': 'MS Trollfjord',
-                  'plot_along_latitude': True, 'dist': 0.1, 'ybin_dist': 0.01},
+                  'plot_along_latitude': True, 'dist': 0.15, 'ybin_dist': 0.1},
          'VT45': {'name': 'Valset',
-                  'latitude': 63.65006,'longitude': 9.77012,
+                  'latitude': 63.65006, 'longitude': 9.77012,
                   'vessel': 'TF',
                   'vessel_name': 'MS Trollfjord',
                   'plot_along_latitude': False,
-                  'dist': 0.1, 'ybin_dist': 0.01},
-         'VT22': {'name': 'Biologisk Stasjon', 'latitude': 63.46, 'longitude': 10.3,
+                  'dist': 0.15,
+                  'ybin_dist': 0.1},
+         'VT22': {'name': 'Biologisk Stasjon', 'latitude': 63.36, 'longitude': 10.2,
                   'vessel': 'TF',
                   'vessel_name': 'MS Trollfjord',
                   'plot_along_latitude': False,
-                  'dist': 0.1, 'ybin_dist': 0.01},
-         'Trondheimsfjorden': {'name': 'Trondheimsfjorden','latitude': 63.46,'longitude': 10.05,
+                  'dist': 0.13, 'ybin_dist': 0.01},
+         'Trondheimsfjorden': {'name': 'Trondheimsfjorden', 'latitude': 63.46, 'longitude': 10.05,
                                'vessel': 'TF',
                                'vessel_name': 'MS Trollfjord',
                                'plot_along_latitude': False,
-                               'dist': 0.035},
+                               'dist': 0.05,'ybin_dist': 0.01},
          'VT23': {'name': 'Trondheimsleia', 'latitude': 63.45737, 'longitude': 8.85324,
                   'vessel': 'TF',
                   'vessel_name': 'MS Trollfjord',
                   'plot_along_latitude': True,
-                  'dist': 0.1, 'ybin_dist': 0.01},
+                  'dist': 0.2, 'ybin_dist': 0.01},
          'VT76': {'name': 'Oksebåsneset', 'latitude': 69.82562, 'longitude': 30.11961,
                   'vessel': 'TF',
                   'vessel_name': 'MS Trollfjord',
@@ -142,12 +151,12 @@ def ferrybox_metadata(stationid):
                   'vessel': 'TF',
                   'vessel_name': 'MS Trollfjord',
                   'plot_along_latitude': False,
-                  'dist': 0.1, 'ybin_dist': 0.01},
+                  'dist': 0.2, 'ybin_dist': 0.05},
          'VR25': {'name': 'Tanafjorden ytre', 'latitude': 70.98425, 'longitude': 28.78323,
                   'vessel': 'TF',
                   'vessel_name': 'MS Trollfjord',
                   'plot_along_latitude': False,
-                  'dist': 0.1, 'ybin_dist': 0.01},
+                  'dist': 0.2, 'ybin_dist': 0.01},
          'VR51': {'name': 'Korsen', 'latitude': 62.0944, 'longitude': 7.0061,
                   'vessel': 'TF',
                   'vessel_name': 'MS Trollfjord',
@@ -172,7 +181,7 @@ def ferrybox_metadata(stationid):
                   'vessel': 'TF',
                   'vessel_name': 'MS Trollfjord',
                   'plot_along_latitude': True,
-                  'dist': 0.1, 'ybin_dist': 0.01},
+                  'dist': 0.2, 'ybin_dist': 0.01},
          'Dk1': {'name': 'Steilene', 'latitude': 59.814999, 'longitude': 10.569384,
                  'vessel': 'FA',
                  'vessel_name': 'MS Color Fantasy',
@@ -181,17 +190,18 @@ def ferrybox_metadata(stationid):
          'Im2': {'name': 'Elle', 'latitude': 59.620367, 'longitude': 10.628200,
                  'vessel': 'FA',
                  'vessel_name': 'MS Color Fantasy',
-                 'plot_along_latitude': True, 'dist': 0.1, 'ybin_dist': 0.01},
-         'Oslofjorden': {'name': 'Skagerrak', 'latitude': 59.0407, 'longitude': 10.7608,
+                 'plot_along_latitude': True,
+                 'dist': 0.1,'ybin_dist': 0.01},
+         'Oslofjorden': {'name': 'Skagerrak', 'latitude': 59.207, 'longitude': 10.7608,
                          'vessel': 'FA',
                          'vessel_name': 'MS Color Fantasy',
                          'plot_along_latitude': True,
-                         'dist': 0.35},
+                         'dist': 0.35,'ybin_dist': 0.05},
          'YO1': {'name': 'Skagerrak', 'latitude': 59.35, 'longitude': 10.7608,
                  'vessel': 'FA',
                  'vessel_name': 'MS Color Fantasy',
                  'plot_along_latitude': True,
-                 'dist': 0.35},
+                 'dist': 0.35,'ybin_dist': 0.01},
          'VR4': {'name': 'Kvænangen', 'latitude': 70.1161, 'longitude': 21.0725,
                  'vessel': 'TF',
                  'vessel_name': 'MS Trollfjord',
@@ -211,7 +221,7 @@ def ferrybox_metadata(stationid):
                   'vessel': 'TF',
                   'vessel_name': 'MS Trollfjord',
                   'plot_along_latitude': True,
-                  'dist': 0.1, 'ybin_dist': 0.01},
+                  'dist': 0.2, 'ybin_dist': 0.01},
          'VR59': {'name': 'Sørfjorden', 'latitude': 69.5711, 'longitude': 19.7185,
                   'vessel': 'TF',
                   'vessel_name': 'MS Trollfjord',
@@ -226,7 +236,7 @@ def ferrybox_metadata(stationid):
                   'vessel': 'TF',
                   'vessel_name': 'MS Trollfjord',
                   'plot_along_latitude': True,
-                  'dist': 0.1, 'ybin_dist': 0.01},
+                  'dist': 0.2, 'ybin_dist': 0.01},
          'VR24': {'name': 'Tanafjorden', 'latitude': 70.7500, 'longitude': 28.3468,
                   'vessel': 'TF',
                   'vessel_name': 'MS Trollfjord',
@@ -241,7 +251,7 @@ def ferrybox_metadata(stationid):
                   'vessel': 'TF',
                   'vessel_name': 'MS Trollfjord',
                   'plot_along_latitude': True,
-                  'dist': 0.1, 'ybin_dist': 0.01},
+                  'dist': 0.2, 'ybin_dist': 0.01},
          'VR7-VR21-VR24': {'name': 'Barentshavet', 'latitude': 70.0, 'longitude': 30.0,
                            'vessel': 'TF',
                            'vessel_name': 'MS Trollfjord',
@@ -249,47 +259,52 @@ def ferrybox_metadata(stationid):
                            'dist': 1.8, 'ybin_dist': 0.3},
          }[stationid]
 
+
 def get_water_sample_data(stationid, df_fb, writer):
-    file="2020/Oekokyst_FB_AQM_extract_2020.xlsx"
+    file = "2020/Oekokyst_FB_AQM_extract_2020.xlsx"
     df = pd.read_excel(file, sheet_name="WaterChemistry")
-    df_id = df[df["StationCode"]==stationid]
+    df_id = df[df["StationCode"] == stationid]
 
     metadata = ferrybox_metadata(stationid)
     st_lon = metadata['longitude']
     st_lat = metadata['latitude']
 
-    for sample_time, sample_klfa in zip(df_id["SampleDate"],df_id["KlfA µg/l"]):
-
+    for sample_time, sample_klfa in zip(df_id["SampleDate"], df_id["KlfA µg/l"]):
         sample_time = pd.to_datetime(sample_time)
 
         fb_time, fb_df = get_data_at_station_and_timestamp(df_fb, st_lon, st_lat, sample_time)
-        line = stationid, st_lon, st_lat, sample_time, sample_klfa, fb_time, fb_df["raw_chla_fluorescence"], fb_df["longitude"], fb_df["latitude"]
+        line = stationid, st_lon, st_lat, sample_time, sample_klfa, fb_time, fb_df["raw_chla_fluorescence"], fb_df[
+            "longitude"], fb_df["latitude"]
         writer.writerow(line)
+
 
 # MAIN
 def main():
-    ferrybox_calibration=True
 
     substations = ['Dk1', 'Im2', 'YO1',
                    'VT4', 'Oslofjorden', 'VT4',
-                   'VT12', 'VT72', 'VT80',
+                   'VT12', 'VT80',
                    'VT45', 'VT22', 'VT23',
                    'VT76', 'VR23', 'VR25',
                    'VR51', 'VR31', 'VT3',
                    'VT71', 'VR54', 'VR4',
-                   'VR56', 'VR58',
+                   'VR58',
                    'VR21', 'VT42', 'VR7-VR21-VR24']
-    # removed VR55, VR59, VR7, VR24, VR52
-    substations = ['VT4','VT76','VR23','VR25','VT80','VT45','VT22','VT23','VT72','VT12']  # ,'VT22','VT22 ytre']
+                 #  'VR55', 'VR59', 'VR7', 'VR24', 'VR52' 'VT72']
+    # removed 'VR56' VR55, VR59, VR7, VR24, VR52 'VT72',
+   # substations = ['VT4', 'VT76', 'VR23', 'VR25', 'VT80', 'VT45', 'VT22', 'VT23', 'VT72',
+   #                'VT12']  # ,'VT22','VT22 ytre']
 
-    # substations = ['Oslofjorden','Dk1', 'Im2', 'YO1','VT4']
+   # substations = ['VR7-VR21-VR24'] #,'Dk1', 'Im2', 'YO1','VT4']
 
     varnames = ['chla_fluorescence', 'cdom_fluorescence', 'salinity', 'turbidity', 'temperature']
-    varnames = ['chla_fluorescence']
+    varnames = ['chla_fluorescence'] #,'salinity', 'temperature']
 
     start_date = datetime(2020, 1, 1)
     end_date = datetime(2020, 12, 31)
-    first=True
+    first = True
+    use_preprocessed_data = True
+    ferrybox_calibration = False
 
     print("Starting contour plot creation for {} stations".format(len(substations)))
     for varname in varnames:
@@ -297,12 +312,37 @@ def main():
             metadata = ferrybox_metadata(stationid)
             print('Creating station for {} using vessel {} and variable {}'.format(stationid, metadata['vessel_name'],
                                                                                    varname))
-            tsbdata = get_list_of_available_timeseries_for_vessel(metadata['vessel_name'],
-                                                                  metadata['vessel'],
-                                                                  start_date,
-                                                                  end_date,
-                                                                  varname,
-                                                                  use_raw=ferrybox_calibration)
+            
+            if not use_preprocessed_data and not ferrybox_calibration:
+                tsbdata = get_list_of_available_timeseries_for_vessel(metadata['vessel_name'],
+                                                                      metadata['vessel'],
+                                                                      start_date,
+                                                                      end_date,
+                                                                      varname,
+                                                                      use_raw=ferrybox_calibration)
+            elif use_preprocessed_data and not ferrybox_calibration:
+                if metadata['vessel']=="FA":
+                    tsbdata = pd.read_csv("../FBdata/Final_data_2020/FA_corrected.dat", usecols=["time",
+                                                                                                 "salinity",
+                                                                                                 "inlet_temperature",
+                                                                                                 "longitude",
+                                                                                                 "latitude",
+                                                                                                 "chla_fluorescence_c3_adj_corr"])
+
+                    tsbdata.columns = ["time","salinity","temperature","longitude","latitude","chla_fluorescence"]
+
+                elif metadata['vessel'] == "TF":
+
+                    tsbdata = pd.read_csv("../FBdata/Final_data_2020/TF_corrected_v2_05022021.dat", usecols=["time",
+                                                                                                             "longitude",
+                                                                                                             "latitude",
+                                                                                                             "raw_chla_fluorescence_c3_adj_corr"])
+
+                    tsbdata.columns = ["time","longitude","latitude","chla_fluorescence"]
+                    print(tsbdata)
+                else:
+                    raise("Unable to read data")
+
 
             if not ferrybox_calibration:
                 station = create_station(stationid, tsbdata, varname)
@@ -315,20 +355,20 @@ def main():
             else:
                 if first is True:
                     import csv
-                    infile="ferrybox_calibration_{}{}_to_{}{}.csv".format(start_date.year,
-                                                                             start_date.month,
-                                                                             end_date.year,
-                                                                             end_date.month)
+                    infile = "ferrybox_calibration_{}{}_to_{}{}.csv".format(start_date.year,
+                                                                            start_date.month,
+                                                                            end_date.year,
+                                                                            end_date.month)
                     if os.path.exists(infile):
                         os.remove(infile)
 
-                    csv_file = open(infile,"a", newline="")
+                    csv_file = open(infile, "a", newline="")
 
                     writer = csv.writer(csv_file, delimiter=',')
                     header = "StationID", "OBS_LON", "OBS_LAT", "OBS_TIME", \
                              "OBS_KLFA", "FB_TIME", "FB_KLFA", "FB_LON", "FB_LAT"
                     writer.writerow(header)
-                    first=False
+                    first = False
 
                 get_water_sample_data(stationid, tsbdata, writer)
 
