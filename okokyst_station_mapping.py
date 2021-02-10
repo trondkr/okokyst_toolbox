@@ -32,13 +32,22 @@ def modify_df(df):
     df = to_rename_columns(df, 'T(FTU)', 'FTU')
     df = to_rename_columns(df, 'T (FTU)', 'FTU')
     df = to_rename_columns(df, 'OpOx %', 'OptOx')
+
     df = to_rename_columns(df, 'Opmg/l', 'OxMgL')
+    df = to_rename_columns(df, 'Opml/l', 'OxMlL')
+
+    # recalculate Oxygen into Ml/l
 
     convert_dict = {
         'Press': float
     }
-    print (type(df['Date'].values))
 
+    df = df.astype(convert_dict)
+
+    if 'OxMgL' in df.columns:
+        df = df.astype({'OxMgL': float})
+        df['OxMgL'] = df.OxMgL.values / 1.42905
+        df = to_rename_columns(df,  'OxMgL', 'OxMlL')
     try:
         df['Date'] = pd.to_datetime(df['Date'], format='%d.%m.%Y').dt.strftime('%d.%m.%Y')
     except Exception as e:
@@ -48,7 +57,7 @@ def modify_df(df):
     except Exception as e:
         print (e)
 
-    df = df.astype(convert_dict)
+
     df = df.dropna(how='all', axis=1)
     df = df.round(4)
     return df
@@ -61,8 +70,12 @@ class processStation(object):
         self.base_path = os.path.split(self.input_path)[0]
         name = os.path.split(self.input_path)[1]
         import re
-        x = re.findall("[0-9]{8}", name)
-        self.correct_survey_date = pd.to_datetime(x, format='%Y%m%d').strftime('%d.%m.%Y').values[0]
+        y = re.findall("[0-9]", str(name))
+        x = ''.join(y)
+
+        print (name,x)
+        self.correct_survey_date = pd.to_datetime(x, format='%Y%m%d').strftime('%d.%m.%Y')
+        print ('correct_survey_date', self.correct_survey_date)#.values[0]
         self.non_assigned = []
         self.assigned = []
         self.servey = self.get_region_from_path()
@@ -78,7 +91,7 @@ class processStation(object):
 
             grouped = self.df_all.groupby('Ser')
             for name, group_df in grouped:
-                print (name)
+                #print (name)
                 self.match_stations_by_depth(group_df)
             #groups = [unused_df for name, unused_df in grouped]
             #print (groups)
@@ -111,7 +124,7 @@ class processStation(object):
         print ('\n****** Reading', self.input_path)
         # read the document and skip undefined number of unneeded rows
 
-        for n in range(1, 10):
+        for n in range(1, 16):
             print('Attempt N', n)
             try:
 
@@ -190,8 +203,15 @@ class processStation(object):
                 dif_threshold = 50
 
             group=group.drop(columns=['Press'])
-            columnOrder=['Ser','Meas','Salinity','Conductivity', 'Temp', 'FTU',
-                           'OptOx', 'OxMgL', 'Density', 'Depth', 'Date', 'Time']
+            columns = group.columns
+            print('columns', columns)
+            if 'OxMgL' in columns:
+                columnOrder=['Ser','Meas','Salinity','Conductivity', 'Temp', 'FTU',
+                               'OptOx', 'OxMgL', 'Density', 'Depth', 'Date', 'Time']
+            else:
+                print ('O2 in Ml/l')
+                columnOrder=['Ser','Meas','Salinity','Conductivity', 'Temp', 'FTU',
+                               'OptOx', 'OxMlL', 'Density', 'Depth', 'Date', 'Time']
             group=group.reindex(columns=columnOrder)
 
             if min_dif < dif_threshold:
@@ -206,7 +226,7 @@ class processStation(object):
                     print ("duplicate")
                     self.station_name = self.station_name + "_duplicate"
 
-                print(self.station_name)
+                print('station_name', self.station_name)
 
 
                 # Save df matched by station
@@ -223,12 +243,13 @@ class processStation(object):
                 if max_depth < 10:
                     print("Probably it is a cleaning station ")
 
-                    filename = os.path.join(self.base_path, 'Cleaning_station', str(Ser), '.txt')
+                    #filename = os.path.join(self.base_path, 'Cleaning_station', str(Ser), '.txt')
                     new_filename = os.path.join(self.new_base_path, 'Cleaning_station' + str(Ser) + '.txt')
                 else:
                     print('available station depths', self.stations_depths)
 
                     #filename = self.base_path + r'\\Unknown_station' + str(Ser) + '.txt'
+                    print('Cast Unknown_station', Ser)
                     new_filename = self.new_base_path + r'\\Unknown_station' + str(Ser) + '.txt'
 
                 self.non_assigned.append(new_filename)
@@ -369,8 +390,19 @@ if __name__ == "__main__":
     #process_all_2020(task)
 
 
+
+    # Sognefjorden Leon
+
+    ## DECEMBER 2019 Sognefjorden Leon
     #processStation(r'K:\Avdeling\214-Oseanografi\DATABASER\OKOKYST_2017\OKOKYST_NS_Nord_Leon\t36_Des2019_Saiv_Leon\O-19075_20191215_Leon.txt')
     #manual_add_metadata_header(r'C:\Users\ELP\OneDrive - NIVA\Documents\Projects\OKOKYST\ØKOKYST_NORDSJØENNORD_CTD\Sognefjorden\2019-12-15\2019-12-15 CTD data\Unknown_station4.txt', 'VT16')
+
+
+    #manual_add_metadata_header(r'C:\Users\ELP\OneDrive - NIVA\Documents\Projects\OKOKYST\ØKOKYST_NORDSJØENNORD_CTD\Sognefjorden\2020-12-10\2020-12-10 CTD data\Unknown_station2.txt', 'VT16')
+
+    ## DECEMBER 2020 Sognefjorden Leon
+    #processStation(r'K:\Avdeling\214-Oseanografi\DATABASER\OKOKYST_2017\OKOKYST_NS_Nord_Leon\t49_Des2020_SAIV_Leon\O-200075_20201210_SAIV_Leon.txt')
+    #manual_add_metadata_header(r'C:\Users\ELP\OneDrive - NIVA\Documents\Projects\OKOKYST\ØKOKYST_NORDSJØENNORD_CTD\Sognefjorden\2020-12-10\2020-12-10 CTD data\Unknown_station2.txt', 'VT16')
 
     #processStation(r'K:\Avdeling\214-Oseanografi\DATABASER\OKOKYST_2017\OKOKYST_NS_Nord_Leon\t37_Janv2020_Saiv_Leon\O-19075_20200119_Leon_sal.txt')
 
@@ -382,6 +414,22 @@ if __name__ == "__main__":
     #processStation(r'K:\Avdeling\214-Oseanografi\DATABASER\OKOKYST_2017\OKOKYST_NS_Nord_Leon\t45_aug2020_SAIV_Leon\O-200075-20200816_SAIV_Leon.txt')
     # okt processStation(r'K:\Avdeling\214-Oseanografi\DATABASER\OKOKYST_2017\OKOKYST_NS_Nord_Leon\t47_Okt2020_SAIV_Leon\O-200075_20201018_SAIV_LEON.txt')
     #processStation(r'K:\Avdeling\214-Oseanografi\DATABASER\OKOKYST_2017\OKOKYST_NS_Nord_Leon\t48_Nov2020_SAIV_Leon\O-200075_20201110_SAIV_Leon.txt')
+
+
+    # Hardangerfjorden Kvitsoy
+
+    ## DECEMBER 2019
+    processStation(r'K:\Avdeling\214-Oseanografi\DATABASER\OKOKYST_2017\OKOKYST_NS_Nord_Kvitsoy\t37_2019-12-16\ctd data\2019-12-16.txt')
+
+    ## NOVEMBER 2020
+    #processStation(r'K:\Avdeling\214-Oseanografi\DATABASER\OKOKYST_2017\OKOKYST_NS_Nord_Kvitsoy\t48_2020_11_09\2020-11-09.txt')
+    ## DECEMBER 2020
+    #processStation(r'K:\Avdeling\214-Oseanografi\DATABASER\OKOKYST_2017\OKOKYST_NS_Nord_Kvitsoy\t49_2020_12_16\2020-12-16.txt')
+
+
+
+
+
     #processStation(os.path.join(k_work_dir, r"OKOKYST_NS_Nord_Kvitsoy\t46_2020_09_21\Kvitsøy_2020-09-21 og 22.txt"))
 
 
@@ -391,3 +439,7 @@ if __name__ == "__main__":
     #                           "VT16")
     #manual_add_metadata_header("C:\\Users\\ELP\\OneDrive - NIVA\\Documents\\Projects\\\\OKOKYST\\ØKOKYST_NORDSJØENNORD_CTD\\Sognefjorden\\2019-12-15\\2019-12-15 CTD data\\\\Unknown_station1.txt",
     #                           "VT16")
+    #JUNE
+    #processStation(r'K:\Avdeling\214-Oseanografi\DATABASER\OKOKYST_2017\OKOKYST_NS_Nord_Leon\t43_Jun2020_Saiv_Leon\O-20200614_SAIV_Leon.txt')
+    #JULY
+    #processStation(r'K:\Avdeling\214-Oseanografi\DATABASER\OKOKYST_2017\OKOKYST_NS_Nord_Leon\t44_jul2020_SAIV_Leon\O-20200715_SAIV_Leon.txt')
