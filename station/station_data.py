@@ -28,7 +28,7 @@ class StationData:
         self.depth.append(depth)
         self.ftu.append(ftu)
         self.julianDay.append(julianDay)
-
+        print("julianDay",julianDay,oxy)
     def getTimeRangeForStation(self, CTDConfig):
         dateObjectStart = num2date(self.julianDay[0], units=CTDConfig.refdate, calendar="standard")
         dateObjectEnd = num2date(self.julianDay[-1], units=CTDConfig.refdate, calendar="standard")
@@ -96,11 +96,11 @@ class StationData:
             te = np.asarray(self.temperature[d].values)
 
             # Convert from mgO/L to mlO/L for reporting
-            if self.survey == "MON":
-                ox = self.special_MON_cases_where_oxygen_already_in_mlOL(CTDConfig, current_date, d)
-            else:
-                ox = np.asarray(self.oxygen[d].values) * CTDConfig.mgperliter_to_mlperliter  # mg/L to ml/L
-
+          #  if self.survey == "MON":
+          #      ox = self.special_MON_cases_where_oxygen_already_in_mlOL(CTDConfig, current_date, d)
+          # This conversion is now done when reading the raw files.
+          #      ox = np.asarray(self.oxygen[d].values) * CTDConfig.mgperliter_to_mlperliter  # mg/L to ml/L
+            ox = np.asarray(self.oxygen[d].values)
             oxsat = np.asarray(self.oxsat[d].values)
             if self.name not in ['SJON1', 'SJON2']:
                 ftu = np.asarray(self.ftu[d].values)

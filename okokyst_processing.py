@@ -14,11 +14,11 @@ import ctdConfig as CTDConfig
 import okokyst_map
 import okokyst_tools
 from station.station_class import Station
-
+import okokyst_station_mapping as sm
 __author__ = 'Trond Kristiansen'
 __email__ = 'trond.kristiansen@niva.no'
 __created__ = datetime(2017, 2, 24)
-__modified__ = datetime(2020, 3, 17)
+__modified__ = datetime(2021, 2, 10)
 __version__ = "1.0"
 __status__ = "Development"
 
@@ -67,7 +67,7 @@ def qualityCheckStation(filename, dateObject, station, CTDConfig):
             downcast['dz/dtM'].loc[downcast_copy['dz/dtM'] == np.nan].fillna(0)
             downcast['dz/dtM'].replace([np.inf, -np.inf], 0.5)
 
-            downcast = downcast[downcast['dz/dtM'] >= 0.1]  # Threshold velocity.
+            downcast = downcast[downcast['dz/dtM'] >= 0.05]  # Threshold velocity.
             window = okokyst_tools.findMaximumWindow(downcast, CTDConfig.tempName)
             window = 10
 
@@ -85,7 +85,18 @@ def qualityCheckStation(filename, dateObject, station, CTDConfig):
                              limit_direction='both',
                              limit_area='inside') \
                 .smooth(window_len=2, window='hanning')
-            oxygen = downcast[CTDConfig.oxName] \
+
+            # Make sure that oxygen is in ml O2/L
+            if 'OxMgL' in downcast.columns:
+                df = downcast.astype({'OxMgL': float})
+                df['OxMgL'] = df.OxMgL.values / 1.42905
+                df = sm.to_rename_columns(df, 'OxMgL', 'OxMlL')
+            elif 'OxMlL' in downcast.columns:
+                df = downcast.astype({'OxMlL': float})
+            else:
+                raise Exception("Unable to find oxygen in dataformat: {}".format(downcast.columns))
+
+            oxygen = df["OxMlL"] \
                 .remove_above_water() \
                 .despike(n1=2, n2=20, block=window) \
                 .interpolate(method='index', \
@@ -121,7 +132,7 @@ def qualityCheckStation(filename, dateObject, station, CTDConfig):
             upcast['dz/dtM'] = movingaverage(upcast['dz/dtM'], window_size=2)
             #    upcast['dz/dtM'] = upcast['dz/dtM'].fillna(0)
             upcast['dz/dtM'] = upcast['dz/dtM'].replace([np.inf, -np.inf], 0.5)
-            upcast = upcast[upcast['dz/dtM'] >= 0.1]  # Threshold velocity.
+            upcast = upcast[upcast['dz/dtM'] >= 0.05]  # Threshold velocity.
 
             window = okokyst_tools.findMaximumWindow(upcast, CTDConfig.tempName)
 
@@ -138,7 +149,6 @@ def qualityCheckStation(filename, dateObject, station, CTDConfig):
                 print("=> STATS FOR UPCAST FTU at %s:\n %s" % (station.name, upcast[[CTDConfig.ftuName]].describe()))
 
         # Binning
-
         delta = 1
         if CTDConfig.survey == "Soerfjorden":
             window_len = 1
@@ -228,6 +238,7 @@ def addHistoricalData(station, CTDConfig):
             ftu = pd.Series(ftu, index=depth)
 
             df_new = pd.DataFrame(columns=["Depth", "Temperature", "Salinity", "Oxygen", "Oxsat", "FTU"])
+
             df_new.set_index('Depth', inplace=True, drop=False)
 
             df_new["Depth"] = depth
@@ -324,6 +335,9 @@ def main(surveys, months, CTDConfig):
             subStations = ["VT70", "VT69", "VT74", "VT53"]
             stationid = ["68910", "68908", "68913", "68911"]
 
+      #      subStations = ["VT53"]
+      #      stationid = ["68911"]
+
         if CTDConfig.survey == "Sognefjorden":
             basepath = os.path.join(work_dir, 'ØKOKYST_NORDSJØENNORD_CTD/Sognefjorden')
 
@@ -414,7 +428,7 @@ if __name__ == "__main__":
     #surveys = ["Sognefjorden"]
     #"Hardangerfjorden","MON"
     surveys = ["Hardangerfjorden", "Sognefjorden"]
-    surveys = ["Soerfjorden"]
+    surveys = ["Sognefjorden"]
 
     months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
 
@@ -442,10 +456,9 @@ if __name__ == "__main__":
                                     oxsatName='OptOx',
                                     refdate="seconds since 1970-01-01:00:00:00",
                                     selected_depths=selected_depths,
-                                    write_to_excel=True,
+                                    write_to_excel=False,
                                     conductivity_to_salinity=False,
                                     debug=True)
-
 
     kw = dict(compression=None)
     kw.update(below_water=True)

@@ -292,7 +292,7 @@ def main():
                    'VR21', 'VT42', 'VR7-VR21-VR24']
                  #  'VR55', 'VR59', 'VR7', 'VR24', 'VR52' 'VT72']
     # removed 'VR56' VR55, VR59, VR7, VR24, VR52 'VT72',
-   # substations = ['VT4', 'VT76', 'VR23', 'VR25', 'VT80', 'VT45', 'VT22', 'VT23', 'VT72',
+    substations = ['VT80'] #, 'VT76', 'VR23', 'VR25', 'VT80', 'VT45', 'VT22', 'VT23', 'VT72',
    #                'VT12']  # ,'VT22','VT22 ytre']
 
    # substations = ['VR7-VR21-VR24'] #,'Dk1', 'Im2', 'YO1','VT4']
