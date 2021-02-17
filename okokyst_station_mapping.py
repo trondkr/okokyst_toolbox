@@ -110,7 +110,6 @@ class processStation(object):
             grouped = self.df_all.groupby('Ser')
             print ('grouped')
             for name, group_df in grouped:
-                print ('name', name)
                 self.match_stations_by_depth(group_df)
             #groups = [unused_df for name, unused_df in grouped]
             #print (groups)

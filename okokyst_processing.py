@@ -14,11 +14,11 @@ import ctdConfig as CTDConfig
 import okokyst_map
 import okokyst_tools
 from station.station_class import Station
-
+import okokyst_station_mapping as sm
 __author__ = 'Trond Kristiansen'
 __email__ = 'trond.kristiansen@niva.no'
 __created__ = datetime(2017, 2, 24)
-__modified__ = datetime(2020, 3, 17)
+__modified__ = datetime(2021, 2, 10)
 __version__ = "1.0"
 __status__ = "Development"
 
@@ -27,7 +27,7 @@ __status__ = "Development"
 # OKOKYST_TOOLBOX INFO:
 #
 # To make use of this toolbox you also need to install python-ctd package. 
-# In the source code for python-ctd localte the folder ctd/read.py and replace the content with the content 
+# In the source code for python-ctd locate the folder ctd/read.py and replace the content with the content
 # of file functionSAIV.py. Then recompile and install the python-ctd module using:
 # cd python-ctd
 # python setup.py develop
@@ -50,11 +50,12 @@ __status__ = "Development"
 # Main function that calls ctd module and reads the individual SAIV data and stores each cast
 # as one station cast object in an array of stations.
 def qualityCheckStation(filename, dateObject, station, CTDConfig):
-    if CTDConfig.debug:
-        print("=> Opening input file: %s" % (filename))
+   # if CTDConfig.debug:
+      #  print("=> Opening input file: %s" % (filename))
 
     cast, metadata = ctd.from_saiv(filename)
     downcast, upcast = cast.split()
+
     if station.name in ["OKS2"] and dateObject.year == 2019:
         upcast = downcast
 
@@ -62,11 +63,11 @@ def qualityCheckStation(filename, dateObject, station, CTDConfig):
         if CTDConfig.useDowncast:
             downcast_copy = downcast.copy()
 
-            downcast_copy['dz/dtM'] = movingaverage(downcast['dz/dtM'], window_size=2)
+            downcast_copy['dz/dtM'] = movingaverage(downcast['dz/dtM'], window_size=1)
             downcast['dz/dtM'].loc[downcast_copy['dz/dtM'] == np.nan].fillna(0)
             downcast['dz/dtM'].replace([np.inf, -np.inf], 0.5)
 
-            downcast = downcast[downcast['dz/dtM'] >= 0.1]  # Threshold velocity.
+            downcast = downcast[downcast['dz/dtM'] >= 0.05]  # Threshold velocity.
             window = okokyst_tools.findMaximumWindow(downcast, CTDConfig.tempName)
             window = 10
 
@@ -84,7 +85,18 @@ def qualityCheckStation(filename, dateObject, station, CTDConfig):
                              limit_direction='both',
                              limit_area='inside') \
                 .smooth(window_len=2, window='hanning')
-            oxygen = downcast[CTDConfig.oxName] \
+
+            # Make sure that oxygen is in ml O2/L
+            if 'OxMgL' in downcast.columns:
+                df = downcast.astype({'OxMgL': float})
+                df['OxMgL'] = df.OxMgL.values / 1.42905
+                df = sm.to_rename_columns(df, 'OxMgL', 'OxMlL')
+            elif 'OxMlL' in downcast.columns:
+                df = downcast.astype({'OxMlL': float})
+            else:
+                raise Exception("Unable to find oxygen in dataformat: {}".format(downcast.columns))
+
+            oxygen = df["OxMlL"] \
                 .remove_above_water() \
                 .despike(n1=2, n2=20, block=window) \
                 .interpolate(method='index', \
@@ -120,7 +132,7 @@ def qualityCheckStation(filename, dateObject, station, CTDConfig):
             upcast['dz/dtM'] = movingaverage(upcast['dz/dtM'], window_size=2)
             #    upcast['dz/dtM'] = upcast['dz/dtM'].fillna(0)
             upcast['dz/dtM'] = upcast['dz/dtM'].replace([np.inf, -np.inf], 0.5)
-            upcast = upcast[upcast['dz/dtM'] >= 0.1]  # Threshold velocity.
+            upcast = upcast[upcast['dz/dtM'] >= 0.05]  # Threshold velocity.
 
             window = okokyst_tools.findMaximumWindow(upcast, CTDConfig.tempName)
 
@@ -137,7 +149,6 @@ def qualityCheckStation(filename, dateObject, station, CTDConfig):
                 print("=> STATS FOR UPCAST FTU at %s:\n %s" % (station.name, upcast[[CTDConfig.ftuName]].describe()))
 
         # Binning
-
         delta = 1
         if CTDConfig.survey == "Soerfjorden":
             window_len = 1
@@ -227,6 +238,7 @@ def addHistoricalData(station, CTDConfig):
             ftu = pd.Series(ftu, index=depth)
 
             df_new = pd.DataFrame(columns=["Depth", "Temperature", "Salinity", "Oxygen", "Oxsat", "FTU"])
+
             df_new.set_index('Depth', inplace=True, drop=False)
 
             df_new["Depth"] = depth
@@ -257,7 +269,7 @@ def addHistoricalData(station, CTDConfig):
 def createContours(stationsList, CTDConfig):
     for station in stationsList:
         station.createTimeSection(CTDConfig)
-        station.createContourPlots(CTDConfig)
+        station.createContourPlots(CTDConfig,work_dir)
 
 def createHistoricalTimeseries(stationsList, CTDConfig):
     for station in stationsList:
@@ -319,10 +331,12 @@ def main(surveys, months, CTDConfig):
             projectid = '10526'
             method = 'Saiv CTD s/n 1270'
             projectname = 'OKOKYST Nordsjoen Nord'
-            subStations = ["VT70", "VT69", "VT74", "VT53", "VT52", "VT75"]
-            stationid = ["68910", "68908", "68913", "68911", "69164", "69165"]
-            #subStations = ["VT75"]
-            #stationid = ["69165"]
+            subStations_before_2020 = ["VT70", "VT69", "VT74", "VT53", "VT52", "VT75"]
+            subStations = ["VT70", "VT69", "VT74", "VT53"]
+            stationid = ["68910", "68908", "68913", "68911"]
+
+      #      subStations = ["VT53"]
+      #      stationid = ["68911"]
 
         if CTDConfig.survey == "Sognefjorden":
             basepath = os.path.join(work_dir, 'ØKOKYST_NORDSJØENNORD_CTD/Sognefjorden')
@@ -349,9 +363,13 @@ def main(surveys, months, CTDConfig):
             for i, folder in enumerate(subdirectories):
                 pbar.update(i + 1)
                 if okokyst_tools.locateDir(os.path.join(basepath, folder)):
-                    dirLevel2 = os.path.join(basepath, folder, folder + " CTD data")
+                    if survey in ["Soerfjorden"]:
+                        dirLevel2 = os.path.join(basepath, folder, folder + "-CTD-data")
+                    else:
+                        dirLevel2 = os.path.join(basepath, folder, folder + " CTD data")
+                    print(dirLevel2)
                     if okokyst_tools.locateDir(dirLevel2):
-                        print(folder, 'folder')
+
                         dateObject = datetime.strptime(folder, '%Y-%m-%d')
                         strmonth = str(dateObject.strftime("%b"))
 
@@ -365,13 +383,16 @@ def main(surveys, months, CTDConfig):
                                 bb = os.path.basename(filename)
                                 filestation = os.path.splitext(bb)
 
-                                if filestation[0] in subStations:
+                                st = filestation[0].replace("_edited","")
+
+                                if st in subStations:
                                     #newfilename = okokyst_tools.createNewFile(filename, station, CTDConfig)
                                     qualityCheckStation(filename, dateObject, station, CTDConfig)
         pbar.finish()
         for st in stationsList:
             if CTDConfig.describeStation:
                 st.describeStation(CTDConfig)
+
             if CTDConfig.createTSPlot:
                 st.plotStationTS(survey)
 
@@ -385,6 +406,7 @@ def main(surveys, months, CTDConfig):
                 st.write_station_to_excel(CTDConfig)
 
         if CTDConfig.createContourPlot:
+            print("Create contours")
             createContours(stationsList, CTDConfig)
 
         if CTDConfig.createHistoricalTimeseries:
@@ -399,16 +421,14 @@ def main(surveys, months, CTDConfig):
 
 if __name__ == "__main__":
 
-
-
-    #work_dir = "/Users/trondkr/Dropbox/"
-    work_dir = r"C:\Users\ELP\OneDrive - NIVA\Documents\Projects\OKOKYST"
+    work_dir = "/Users/trondkr/Dropbox/"
+    #work_dir = r"C:\Users\ELP\OneDrive - NIVA\Documents\Projects\OKOKYST"
 
     # EDIT
     #surveys = ["Sognefjorden"]
-    #"Hardangerfjorden",
-    #surveys = ["Soerfjorden", "MON"]
-    surveys = ["Hardangerfjorden"]
+    #"Hardangerfjorden","MON"
+    surveys = ["Hardangerfjorden", "Sognefjorden"]
+    surveys = ["Sognefjorden"]
 
     months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
 
@@ -422,8 +442,8 @@ if __name__ == "__main__":
 
     CTDConfig = CTDConfig.CTDConfig(createStationPlot=False,
                                     createTSPlot=False,
-                                    createContourPlot=False,
-                                    createTimeseriesPlot=True,
+                                    createContourPlot=True,
+                                    createTimeseriesPlot=False,
                                     binDataWriteToNetCDF=False,
                                     describeStation=False,
                                     createHistoricalTimeseries=False,
@@ -439,7 +459,6 @@ if __name__ == "__main__":
                                     write_to_excel=False,
                                     conductivity_to_salinity=False,
                                     debug=True)
-
 
     kw = dict(compression=None)
     kw.update(below_water=True)

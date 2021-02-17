@@ -27,7 +27,7 @@ class FormatScalarFormatter(matplotlib.ticker.ScalarFormatter):
     def _set_format(self):
         self.format = self.fformat
         if self._useMathText:
-            self.format = '$%s$' % matplotlib.ticker._mathdefault(self.format)
+            self.format = r'$\mathdefault{%s}$' % self.format
 
 
 class StationPlot:
@@ -91,9 +91,12 @@ class StationPlot:
         if float(max_depth) > 250:
             ax.set_ylim(-250, 0)
             depthindex = np.where(Y == 250)[0][0]
-        elif 100 < float(max_depth) < 190:
-            ax.set_ylim(-150, 0)
-            depthindex = np.where(Y == 150)[0][0]
+        elif 150 < float(150) < 190:
+            ax.set_ylim(150, 0)
+            depthindex = np.where(Y == max_depth)[0][0]
+        elif 120 < float(120) < 150:
+            ax.set_ylim(120, 0)
+            depthindex = np.where(Y == max_depth)[0][0]
         else:
             depthindex = -1
 
@@ -137,7 +140,7 @@ class StationPlot:
             ax.set_ylim(-300, 0)
             depthindex = np.where(Y == 300)[0][0]
         if varname in ["ftu"]:
-            print("ylim", ax.get_ylim())
+
             if ax.get_ylim()[0] < -100:
                 ax.set_ylim(-100, 0)
                 depthindex = np.where(Y == 100)[0][0]
@@ -364,7 +367,7 @@ class StationPlot:
             print('Empty dates', CTDConfig)
 
 
-    def createContourPlots(self, CTDConfig):
+    def createContourPlots(self, CTDConfig, work_dir):
         xticklabels = []
         yticklabels = []
         for d, dd in enumerate(self.julianDay):
@@ -420,9 +423,11 @@ class StationPlot:
                 ax.set_xlabel("Dato")
 
             dateObjectStart, dateObjectEnd = self.getTimeRangeForStation(CTDConfig)
+
             self.save_to_file(CTDConfig,
                               varNames[i],
                               'timeseries',
+                              work_dir,
                               selected_depth='alldepths',
                               dateObjectStart=dateObjectStart,
                               dateObjectEnd=dateObjectEnd)

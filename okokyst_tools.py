@@ -116,10 +116,16 @@ def pressure_to_depth(P, lat):
 
 # After identifying correct folder, find the txt file
 def locateFile(basepath, subStation):
-    filename = "%s/%s.txt" % (basepath, subStation)
+    filename = "%s/%s_edited.txt" % (basepath, subStation)
     ####print (filename)
     if os.path.isfile(filename):
         return filename
+    else:
+        # In cases like for 2020 where the edited files are not named equal to earlier
+        # years but simply had the _:edited removed. These files come from Lizas script.
+        filename = "%s/%s.txt" % (basepath, subStation)
+        if os.path.isfile(filename):
+            return filename
 
 def locateDir(folder):
     if os.path.isdir(folder):

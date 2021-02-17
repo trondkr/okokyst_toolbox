@@ -100,7 +100,7 @@ serveys_lookup_table = {
 
     "Soerfjorden": {
         "SOE72": {
-            "station.header": "STATION;SOE22;SOE22;60.08138;6.538253\n",
+            "station.header": "STATION;SOE72;SOE72;60.08138;6.538253\n",
             "station.longitude": 6.538253,
             "station.latitude": 60.08138},
         "Lind1": {
