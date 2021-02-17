@@ -23,6 +23,7 @@ def to_rename_columns(df,old_name, new_name):
 
 
 def modify_df(df):
+    print ('modify df')
     '''
     Convert columns name to the format used further in the processing steps
     '''
@@ -37,29 +38,38 @@ def modify_df(df):
     df = to_rename_columns(df, 'Opml/l', 'OxMlL')
 
     # recalculate Oxygen into Ml/l
-
+    print (df.columns)
     convert_dict = {
         'Press': float
     }
 
     df = df.astype(convert_dict)
 
-    if 'OxMgL' in df.columns:
+    '''if 'OxMgL' in df.columns:
+        print ('recalculate to ml/l')
         df = df.astype({'OxMgL': float})
         df['OxMgL'] = df.OxMgL.values / 1.42905
-        df = to_rename_columns(df,  'OxMgL', 'OxMlL')
+        df = to_rename_columns(df,  'OxMgL', 'OxMlL')'''
+
     try:
         df['Date'] = pd.to_datetime(df['Date'], format='%d.%m.%Y').dt.strftime('%d.%m.%Y')
     except Exception as e:
-        print (e)
+        print ('date',e)
     try:
         df['Time'] = pd.to_datetime(df['Time'], format='%H:%M:%S').dt.strftime('%H.%M.%S')
     except Exception as e:
-        print (e)
+        print ('time', e)
+    print ('x')
 
+    try:
+        df = df.astype({'OxMlL': float})
+    except Exception as e:
+        print ('float', e)
+        df = df.astype({'OxMgL': float})
 
     df = df.dropna(how='all', axis=1)
     df = df.round(4)
+    print ('modified df')
     return df
 
 
@@ -69,13 +79,21 @@ class processStation(object):
         self.input_path = inputpath
         self.base_path = os.path.split(self.input_path)[0]
         name = os.path.split(self.input_path)[1]
-        import re
-        y = re.findall("[0-9]", str(name))
-        x = ''.join(y)
 
-        print (name,x)
-        self.correct_survey_date = pd.to_datetime(x, format='%Y%m%d').strftime('%d.%m.%Y')
-        print ('correct_survey_date', self.correct_survey_date)#.values[0]
+        import re
+        try:
+            y = re.findall("[0-9]", str(name))
+            x = ''.join(y)
+            print (name,x)
+            self.correct_survey_date = pd.to_datetime(x, format='%Y%m%d').strftime('%d.%m.%Y')
+            print ('correct_survey_date', self.correct_survey_date)#.values
+        except:
+            y = re.findall("[0-9]{8}", str(name))
+            x = ''.join(y)
+            print(name, x)
+            self.correct_survey_date = pd.to_datetime(x, format='%Y%m%d').strftime('%d.%m.%Y')
+            print('correct_survey_date', self.correct_survey_date)  # .values
+
         self.non_assigned = []
         self.assigned = []
         self.servey = self.get_region_from_path()
@@ -90,20 +108,22 @@ class processStation(object):
             self.df_all = modify_df(self.df_all)
 
             grouped = self.df_all.groupby('Ser')
+            print ('grouped')
             for name, group_df in grouped:
-                #print (name)
+                print ('name', name)
                 self.match_stations_by_depth(group_df)
             #groups = [unused_df for name, unused_df in grouped]
             #print (groups)
             #grouped.apply(self.match_stations_by_depth)
-        except:
-            print('Error in reading the dataframe')
+        except Exception as e:
+            print('Error in reading the dataframe',e)
 
     def calc_depth(self):
         first_st = list(serveys_lookup_table[self.servey].keys())[0]
 
         latitude = serveys_lookup_table[self.servey][first_st]["station.latitude"]
         depths = []
+
         for p in self.df_all['Press'].values:
             d = pressure_to_depth(float(p), latitude)
             depths.append(d)
@@ -165,7 +185,7 @@ class processStation(object):
             except Exception as e:
                 print('Exception 3', e)
                 df_all = None
-
+        print ('***',df_all.columns)
         return df_all
 
     def match_stations_by_depth(self, group):
@@ -205,15 +225,19 @@ class processStation(object):
             group=group.drop(columns=['Press'])
             columns = group.columns
             print('columns', columns)
+
+            #print ('max OxMlL', group['OxMlL'].max())
             if 'OxMgL' in columns:
                 columnOrder=['Ser','Meas','Salinity','Conductivity', 'Temp', 'FTU',
                                'OptOx', 'OxMgL', 'Density', 'Depth', 'Date', 'Time']
+                print('max OxMlL', group['OxMgL'].max(), group.columns)
             else:
                 print ('O2 in Ml/l')
                 columnOrder=['Ser','Meas','Salinity','Conductivity', 'Temp', 'FTU',
                                'OptOx', 'OxMlL', 'Density', 'Depth', 'Date', 'Time']
+                print('max OxMlL', group['OxMlL'].max(), group.columns)
             group=group.reindex(columns=columnOrder)
-
+            #
             if min_dif < dif_threshold:
                 nearest_depth_id = np.where(sqr_difs == min_dif)[0][0]
                 self.station_name = self.stations_list[nearest_depth_id]
@@ -230,8 +254,13 @@ class processStation(object):
 
 
                 # Save df matched by station
-                self.filename = os.path.join(self.base_path, self.station_name + '.txt')
-                group.to_csv(self.filename, index=False, sep=';')
+                #self.filename = os.path.join(self.base_path, self.station_name + '.txt')
+                self.filename = os.path.join(self.new_base_path, self.station_name + '_temp.txt')
+
+
+                print('save data to file with ', self.filename, Ser)
+                #print (group['OxMlL'].values[:5])
+                group.to_csv(self.filename,  sep=';')
 
                 #Add header and save update file in the new location
                 self.assigned.append(self.station_name)
@@ -254,6 +283,7 @@ class processStation(object):
 
                 self.non_assigned.append(new_filename)
                 #group.to_csv(filename, index=False, sep=';')
+                #print (group['OxMlL'].values.max())
                 group.to_csv(new_filename, index=False, sep=';')
         else:
             print ('Date of measurement does not match date in a filename')
@@ -287,14 +317,18 @@ class processStation(object):
 
     def add_metadata_header(self):
         header = self.station_metadata['station.header']
+        print ('adding metadata header to ', self.station_name,'.txt')
         new_filename = os.path.join(self.new_base_path, self.station_name + '.txt')
-
+        print (new_filename)
         # Open initial file, update header, save the new file in One_Drive
         with open(self.filename, 'r') as read_obj, open(new_filename, 'w') as write_obj:
             write_obj.write(header)
             for line in read_obj:
                 write_obj.write(line)
-
+        try:
+            os.remove(self.filename)
+        except Exception as e:
+            print (e)
 
 def manual_add_metadata_header(filepath, station_name):
     t = serveys_lookup_table
@@ -385,10 +419,8 @@ if __name__ == "__main__":
     k_work_dir = r'K:/Avdeling/214-Oseanografi/DATABASER/OKOKYST_2017/'
     onedrive = r'C:\Users\ELP\OneDrive - NIVA\Documents\Projects\\OKOKYST\ØKOKYST_NORDSJØENNORD_CTD'
     task = "sognefjorden"
-    #task = "hardangerfjorden"
-
     #process_all_2020(task)
-
+    #task = "hardangerfjorden"
 
 
     # Sognefjorden Leon
@@ -404,34 +436,46 @@ if __name__ == "__main__":
     #processStation(r'K:\Avdeling\214-Oseanografi\DATABASER\OKOKYST_2017\OKOKYST_NS_Nord_Leon\t49_Des2020_SAIV_Leon\O-200075_20201210_SAIV_Leon.txt')
     #manual_add_metadata_header(r'C:\Users\ELP\OneDrive - NIVA\Documents\Projects\OKOKYST\ØKOKYST_NORDSJØENNORD_CTD\Sognefjorden\2020-12-10\2020-12-10 CTD data\Unknown_station2.txt', 'VT16')
 
-    #processStation(r'K:\Avdeling\214-Oseanografi\DATABASER\OKOKYST_2017\OKOKYST_NS_Nord_Leon\t37_Janv2020_Saiv_Leon\O-19075_20200119_Leon_sal.txt')
+    leon = r"K:\Avdeling\214-Oseanografi\DATABASER\OKOKYST_2017\OKOKYST_NS_Nord_Leon\\"
 
-    #processStation(r'K:\Avdeling\214-Oseanografi\DATABASER\OKOKYST_2017\OKOKYST_NS_Nord_Leon\t38_Feb2020_Saiv_Leon\O-20075_20200219.txt')
+    # January 2020
+    #processStation(leon + r'\t37_Janv2020_Saiv_Leon\O-19075_20200119_Leon_sal.txt')
+    # February 2020
+    #processStation(leon + "t38_Feb2020_Saiv_Leon\O-20075_20200219.txt")
     #manual_add_metadata_header(r'C:\Users\ELP\OneDrive - NIVA\Documents\Projects\OKOKYST\ØKOKYST_NORDSJØENNORD_CTD\Sognefjorden\2020-02-19\2020-02-19 CTD data\Unknown_station4.txt',
     #                           "VT16")
-
-    #processStation(r'K:\Avdeling\214-Oseanografi\DATABASER\OKOKYST_2017\OKOKYST_NS_Nord_Leon\t39_Mar2020_Saiv_Leon\O-20075_20200312.txt')
-    #processStation(r'K:\Avdeling\214-Oseanografi\DATABASER\OKOKYST_2017\OKOKYST_NS_Nord_Leon\t45_aug2020_SAIV_Leon\O-200075-20200816_SAIV_Leon.txt')
-    # okt processStation(r'K:\Avdeling\214-Oseanografi\DATABASER\OKOKYST_2017\OKOKYST_NS_Nord_Leon\t47_Okt2020_SAIV_Leon\O-200075_20201018_SAIV_LEON.txt')
+    #March 2020
+    #processStation(leon + "t39_Mar2020_Saiv_Leon\O-20075_20200312.txt")
+    #April 2020
+    #processStation(leon + "t40_Apr2020_Saiv_Leon\O-20075_20200414_SAIV_Leon.txt")
+    #Mai 2020
+    #processStation(r'K:\Avdeling\214-Oseanografi\DATABASER\OKOKYST_2017\OKOKYST_NS_Nord_Leon\t41_Mai2020_Saiv_Leon\O-20075_20200513_SAIV_Leon.txt')
+    #June 2020
+    #processStation(leon + "t43_Jun2020_Saiv_Leon\O-20075_20200614_SAIV_Leon.txt")
+    #JULY 2020
+    #processStation(leon + r'\t44_jul2020_SAIV_Leon\O-20200715_SAIV_Leon.txt')
+    #August 2020
+    #processStation(leon+ 't45_aug2020_SAIV_Leon\O-200075-20200816_SAIV_Leonn.txt')
+    #September 2020
+    #processStation(leon + 't46_Sept2020_Saiv_Leon\O-200075_20200913_SAIV_Leon.txt')
+    #October 2020
+    processStation(r'K:\Avdeling\214-Oseanografi\DATABASER\OKOKYST_2017\OKOKYST_NS_Nord_Leon\t47_Okt2020_SAIV_Leon\O-200075_20201018_SAIV_LEON.txt')
+    #November 2020
     #processStation(r'K:\Avdeling\214-Oseanografi\DATABASER\OKOKYST_2017\OKOKYST_NS_Nord_Leon\t48_Nov2020_SAIV_Leon\O-200075_20201110_SAIV_Leon.txt')
+    #December 2020
+    #processStation(leon + r't49_Des2020_SAIV_Leon\O-200075_20201210_SAIV_Leon.txt')
+    #manual_add_metadata_header(r'C:\Users\ELP\OneDrive - NIVA\Documents\Projects\OKOKYST\ØKOKYST_NORDSJØENNORD_CTD\Sognefjorden\2020-12-10\2020-12-10 CTD data\Unknown_station2.txt', 'VT16')
 
-
-    # Hardangerfjorden Kvitsoy
+    ### Hardangerfjorden Kvitsoy
 
     ## DECEMBER 2019
-    processStation(r'K:\Avdeling\214-Oseanografi\DATABASER\OKOKYST_2017\OKOKYST_NS_Nord_Kvitsoy\t37_2019-12-16\ctd data\2019-12-16.txt')
+    #processStation(r'K:\Avdeling\214-Oseanografi\DATABASER\OKOKYST_2017\OKOKYST_NS_Nord_Kvitsoy\t37_2019-12-16\ctd data\2019-12-16.txt')
 
     ## NOVEMBER 2020
     #processStation(r'K:\Avdeling\214-Oseanografi\DATABASER\OKOKYST_2017\OKOKYST_NS_Nord_Kvitsoy\t48_2020_11_09\2020-11-09.txt')
-    ## DECEMBER 2020
-    #processStation(r'K:\Avdeling\214-Oseanografi\DATABASER\OKOKYST_2017\OKOKYST_NS_Nord_Kvitsoy\t49_2020_12_16\2020-12-16.txt')
 
-
-
-
-
+    # SEPTEMBER 2020
     #processStation(os.path.join(k_work_dir, r"OKOKYST_NS_Nord_Kvitsoy\t46_2020_09_21\Kvitsøy_2020-09-21 og 22.txt"))
-
 
     #fpath = os.path.join(onedrive, r'Hardangerfjorden\2020-09-21\2020-09-21 CTD data\Unknown_station1.txt')
     #name = 'VT69'
@@ -443,3 +487,8 @@ if __name__ == "__main__":
     #processStation(r'K:\Avdeling\214-Oseanografi\DATABASER\OKOKYST_2017\OKOKYST_NS_Nord_Leon\t43_Jun2020_Saiv_Leon\O-20200614_SAIV_Leon.txt')
     #JULY
     #processStation(r'K:\Avdeling\214-Oseanografi\DATABASER\OKOKYST_2017\OKOKYST_NS_Nord_Leon\t44_jul2020_SAIV_Leon\O-20200715_SAIV_Leon.txt')
+
+    #processStation(r'K:\Avdeling\214-Oseanografi\DATABASER\OKOKYST_2017\OKOKYST_NS_Nord_Leon\t46_Sept2020_Saiv_Leon\O-200075_20200913_SAIV_Leon.txt')
+
+    ## DECEMBER 2020
+    #processStation(r'K:\Avdeling\214-Oseanografi\DATABASER\OKOKYST_2017\OKOKYST_NS_Nord_Kvitsoy\t49_2020_12_16\2020-12-16.txt')
