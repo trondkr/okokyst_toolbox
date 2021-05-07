@@ -27,3 +27,5 @@ dask-worker-space/*
 .Ulysses-Group.plist
 .Ulysses-Group.plist
 *.csv
+xlsfiles/**/*
+**/*.xlxs
