@@ -123,8 +123,13 @@ def qualityCheckStation(filename, dateObject, station, CTDConfig):
                     station.name, downcast[[CTDConfig.tempName]].describe()))
                 print("=> STATS FOR DOWNCAST SALT at %s:\n %s" % (
                     station.name, downcast[[CTDConfig.saltName]].describe()))
-                print("=> STATS FOR DOWNCAST OXYGEN at %s:\n %s" % (
-                    station.name, downcast[[CTDConfig.oxName]].describe()))
+
+                if 'OxMgL' in downcast.columns:
+                    print("=> STATS FOR DOWNCAST OXYGEN at %s:\n %s" % (
+                        station.name, downcast[["OxMgL"]].describe()))
+                else:
+                    print("=> STATS FOR DOWNCAST OXYGEN at %s:\n %s" % (
+                        station.name, downcast[["OxMlL"]].describe()))
                 print(
                     "=> STATS FOR DOWNCAST FTU at %s:\n %s" % (station.name, downcast[[CTDConfig.ftuName]].describe()))
         else:
@@ -199,11 +204,13 @@ def qualityCheckStation(filename, dateObject, station, CTDConfig):
         return df
 
 # Add data from Aquamonitor (netcdf) files to be able to plot longer time series.
-def addHistoricalData(station, CTDConfig):
+def addHistoricalData(station, CTDConfig, work_dir):
     if station.name in ['VT69']:
         ds = xr.open_dataset('/Users/trondkr/Dropbox/NIVA/OKOKYST/Historical_oekokyst_data/VT69_2013_2016.nc')
-    if station.name in ['VT70']:
-            ds = xr.open_dataset('/Users/trondkr/Dropbox/NIVA/OKOKYST/Historical_oekokyst_data/VT70_2013_2016.nc')
+    elif station.name in ['VT70']:
+        ds = xr.open_dataset('/Users/trondkr/Dropbox/NIVA/OKOKYST/Historical_oekokyst_data/VT70_2013_2016.nc')
+    else:
+        raise Exception("Should not call addHistoricalData unless station is VT69 or VT70 due to available timeseries")
 
     df = ds.to_dataframe().groupby(['time', 'depth']).mean()
     first = True
@@ -269,12 +276,13 @@ def addHistoricalData(station, CTDConfig):
 def createContours(stationsList, CTDConfig):
     for station in stationsList:
         station.createTimeSection(CTDConfig)
-        station.createContourPlots(CTDConfig,work_dir)
+        station.createContourPlots(CTDConfig, work_dir)
 
-def createHistoricalTimeseries(stationsList, CTDConfig):
+def createHistoricalTimeseries(stationsList, CTDConfig, work_dir):
     for station in stationsList:
-        station.createTimeSection(CTDConfig)
-        station.createHistoricalTimeseries(CTDConfig)
+        if station.name in ["VT69","VT70"]:
+            station.createTimeSection(CTDConfig)
+            station.createHistoricalTimeseries(CTDConfig, work_dir)
 
 def createTimeseries(stationsList, CTDConfig):
     for station in stationsList:
@@ -335,6 +343,9 @@ def main(surveys, months, CTDConfig):
             subStations = ["VT70", "VT69", "VT74", "VT53"]
             stationid = ["68910", "68908", "68913", "68911"]
 
+          #  subStations = ["VT70"]
+          #  stationid = ["68910"]
+
       #      subStations = ["VT53"]
       #      stationid = ["68911"]
 
@@ -357,7 +368,8 @@ def main(surveys, months, CTDConfig):
             station.stationid = stationid[sub_index]
 
             if CTDConfig.createHistoricalTimeseries:
-                addHistoricalData(station, CTDConfig)
+                if station.name in ["VT69","VT70"]:
+                    addHistoricalData(station, CTDConfig, work_dir)
 
             print("\nSurvey: {} => Adding station {}".format(survey, subStation))
             for i, folder in enumerate(subdirectories):
@@ -367,7 +379,7 @@ def main(surveys, months, CTDConfig):
                         dirLevel2 = os.path.join(basepath, folder, folder + "-CTD-data")
                     else:
                         dirLevel2 = os.path.join(basepath, folder, folder + " CTD data")
-                    print(dirLevel2)
+
                     if okokyst_tools.locateDir(dirLevel2):
 
                         dateObject = datetime.strptime(folder, '%Y-%m-%d')
@@ -389,6 +401,9 @@ def main(surveys, months, CTDConfig):
                                     #newfilename = okokyst_tools.createNewFile(filename, station, CTDConfig)
                                     qualityCheckStation(filename, dateObject, station, CTDConfig)
         pbar.finish()
+        if CTDConfig.createHistoricalTimeseries:
+            createHistoricalTimeseries(stationsList, CTDConfig, work_dir)
+
         for st in stationsList:
             if CTDConfig.describeStation:
                 st.describeStation(CTDConfig)
@@ -409,9 +424,6 @@ def main(surveys, months, CTDConfig):
             print("Create contours")
             createContours(stationsList, CTDConfig)
 
-        if CTDConfig.createHistoricalTimeseries:
-            createHistoricalTimeseries(stationsList, CTDConfig)
-
         if CTDConfig.createTimeseriesPlot:
             createTimeseries(stationsList, CTDConfig)
 
@@ -428,13 +440,13 @@ if __name__ == "__main__":
     #surveys = ["Sognefjorden"]
     #"Hardangerfjorden","MON"
     surveys = ["Hardangerfjorden", "Sognefjorden"]
-    surveys = ["Sognefjorden"]
+  #  surveys = ["Hardangerfjorden"]
 
     months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
 
     # Define the depth levels (meters) you want to create plots showing the annual differences
-    # Onoy used when createTimeseriesPlot=True
-    selected_depths = [3, 100, 200]
+    # Only used when createTimeseriesPlot=True
+    selected_depths = [5, 100, 200]
 
     # NOTE: make sure the function "addStationMeadata" is up to date with info
     # MON survey needs to use upcast
@@ -442,10 +454,10 @@ if __name__ == "__main__":
 
     CTDConfig = CTDConfig.CTDConfig(createStationPlot=False,
                                     createTSPlot=False,
-                                    createContourPlot=True,
+                                    createContourPlot=False,
                                     createTimeseriesPlot=False,
                                     binDataWriteToNetCDF=False,
-                                    describeStation=False,
+                                    describeStation=True,
                                     createHistoricalTimeseries=False,
                                     showStats=False,
                                     plotStationMap=False,
@@ -456,7 +468,7 @@ if __name__ == "__main__":
                                     oxsatName='OptOx',
                                     refdate="seconds since 1970-01-01:00:00:00",
                                     selected_depths=selected_depths,
-                                    write_to_excel=False,
+                                    write_to_excel=True,
                                     conductivity_to_salinity=False,
                                     debug=True)
 

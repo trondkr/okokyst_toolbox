@@ -4,6 +4,9 @@ import matplotlib.pyplot as plt
 import matplotlib.tri as tri
 import numpy as np
 import pandas as pd
+from matplotlib.collections import PatchCollection
+from matplotlib.colors import ListedColormap
+from matplotlib.patches import Rectangle
 from netCDF4 import date2num, num2date
 
 from .ferrybox_calibration import FerryBoxCalibration
@@ -26,7 +29,7 @@ class FerryBoxStation:
         self.df_st = df_st
         self.df_st_grouped = None
         self.refdate = "days since 1970-01-01:00:00:00"
-        self.bin_days = 7
+        self.bin_days = 50
         self.stationid = stationid
         self.basedir = '../FBdata/'
         self.start_date_jd = None
@@ -44,7 +47,7 @@ class FerryBoxStation:
             if metadata["name"] in ["Barentshavet"]:
                 self.ybin_dist = 0.13
             else:
-                self.ybin_dist = 0.1
+                self.ybin_dist = 0.035
                 if stationid in ["VR25", "VR23", "VT45", "VT22", "VT76"]:
                     self.ybin_dist=0.05
                     self.bin_days=23
@@ -71,17 +74,66 @@ class FerryBoxStation:
             df2['julianday'] = date2num(self.df_st.index.to_pydatetime(), units=self.refdate, calendar="standard")
         self.df_st = df2
 
-    def bin_dataframe(self):
+    def bin_dataframe2(self):
         numcols, numrows = 100, 10
+
         xi = np.linspace(self.df_st_grouped.longitude.min(), self.df_st_grouped.longitude.max(), numcols)
         yi = np.linspace(self.df_st_grouped.latitude.min(), self.df_st_grouped.latitude.max(), numrows)
         xi, yi = np.meshgrid(xi, yi)
         from scipy.interpolate import griddata
         x, y, z = self.df_st_grouped.longitude.values, self.df_st_grouped.latitude.values, self.df_st_grouped.chla_fluorescence.values
-        return xi,yi, griddata((x, y), z, (xi, yi), method='linear', fill_value=np.nan, rescale=False)
 
-    def bin_dataframe2(self):
-        self.df_st.to_csv("VT80.csv")
+        binned = griddata((x, y), z, (xi, yi), method='linear', fill_value=np.nan, rescale=False)
+
+        julianday = xi
+        latitude = yi
+
+        return binned, julianday, latitude
+
+    def create_warming_strips_plot(df):
+        FIRST = 2020
+        LAST = 2021  # inclusive
+
+        # Reference period for the center of the color scale
+        FIRST_REFERENCE = 1971
+        LAST_REFERENCE = 2000
+        LIM = 0.7  # degrees
+
+
+        # the colors in this colormap come from http://colorbrewer2.org
+        # the 8 more saturated colors from the 9 blues / 9 reds
+
+        cmap = ListedColormap([
+            '#08306b', '#08519c', '#2171b5', '#4292c6',
+            '#6baed6', '#9ecae1', '#c6dbef', '#deebf7',
+            '#fee0d2', '#fcbba1', '#fc9272', '#fb6a4a',
+            '#ef3b2c', '#cb181d', '#a50f15', '#67000d',
+        ])
+
+        fig = plt.figure(figsize=(10, 1))
+
+        ax = fig.add_axes([0, 0, 1, 1])
+        ax.set_axis_off()
+
+        # create a collection with a rectangle for each year
+
+        col = PatchCollection([
+            Rectangle((y, 0), 1, 1)
+            for y in range(FIRST, LAST + 1)
+        ])
+
+        # set data, colormap and color limits
+
+        col.set_array(anomaly)
+        col.set_cmap(cmap)
+        col.set_clim(reference - LIM, reference + LIM)
+        ax.add_collection(col)
+        ax.set_ylim(0, 1)
+        ax.set_xlim(FIRST, LAST + 1)
+
+        fig.savefig('{}_warming_stripes.png'.format(CMIP6_name))
+
+    def bin_dataframe(self):
 
         x_bins = pd.cut(self.df_st_grouped.julianday, np.arange(self.start_date_jd,
                                                                 self.end_date_jd,
@@ -116,13 +168,15 @@ class FerryBoxStation:
     def interpolate_irregular_data_to_grid(self):
         # https://matplotlib.org/gallery/images_contours_and_fields/irregulardatagrid.html
         binned = self.bin_dataframe()
+
         xi = np.arange(self.start_date_jd, self.end_date_jd, 1)
 
         if not self.plot_along_latitude:
-            yi = np.arange(np.min(binned.longitude), np.max(binned.longitude), 0.01)
+            yi = np.arange(np.nanmin(binned.longitude), np.nanmax(binned.longitude), 0.1)
             triang = tri.Triangulation(binned.julianday, binned.longitude)
         else:
-            yi = np.arange(np.min(binned.latitude), np.max(binned.latitude), 0.01)
+
+            yi = np.arange(np.nanmin(binned.latitude), np.nanmax(binned.latitude), 0.1)
             triang = tri.Triangulation(binned.julianday, binned.latitude)
         interpolator = tri.LinearTriInterpolator(triang, getattr(binned, self.varname))
         Xi, Yi = np.meshgrid(xi, yi)
@@ -140,7 +194,7 @@ class FerryBoxStation:
         return {'temperature': 22,
                 'salinity': 36,
                 'cdom_fluorescence': 3.0,
-                'turbidity': 25.0,
+                'turbidity': 50.0,
                 'chla_fluorescence': 3.5}[self.varname]
 
     def get_varname_minrange(self):
@@ -158,7 +212,7 @@ class FerryBoxStation:
                 'chla_fluorescence': 0.2}[self.varname]
 
     def create_station_contour_plot(self):
-        xi, yi, zi= self.bin_dataframe() #self.interpolate_irregular_data_to_grid()
+        xi, yi, zi, binned = self.interpolate_irregular_data_to_grid()
 
         fig, (ax1) = plt.subplots(nrows=1)
 

@@ -74,6 +74,7 @@ def get_list_of_available_timeseries_for_vessel(vessel_name, vessel_abbreviation
 def get_data_around_station(df, st_lon, st_lat, dist):
     # https://stackoverflow.com/questions/21415661/logical-operators-for-boolean-indexing-in-pandas
     # Filter out the longitude and latitudes surrounding the station lat/lon
+    print(df['latitude'])
     return df[
         (st_lat - dist < df['latitude']) & (df['latitude'] < st_lat + dist) & (st_lon - 2 * dist < df['longitude']) & (
                 df['longitude'] < st_lon + 2 * dist)]
@@ -90,11 +91,11 @@ def get_data_at_station_and_timestamp(df, st_lon, st_lat, timestamp):
 def create_station(stationid, df, varname):
     metadata = ferrybox_metadata(stationid)
     # Get the data for the station
+
     if not metadata["plot_along_latitude"]:
         df_st = get_data_around_station(df, metadata['longitude'], metadata['latitude'], 0.2)
     else:
-        df_st = get_data_around_station(df, metadata['longitude'], metadata['latitude'], metadata['dist'])
-   # import numpy as np
+        df_st = get_data_around_station(df, metadata['longitude'], metadata['latitude'], 0.2)
 
     # Create the station
     return fb.FerryBoxStation(stationid, metadata, df_st, varname)
@@ -136,7 +137,7 @@ def ferrybox_metadata(stationid):
                                'vessel': 'TF',
                                'vessel_name': 'MS Trollfjord',
                                'plot_along_latitude': False,
-                               'dist': 0.05,'ybin_dist': 0.01},
+                               'dist': 0.05, 'ybin_dist': 0.01},
          'VT23': {'name': 'Trondheimsleia', 'latitude': 63.45737, 'longitude': 8.85324,
                   'vessel': 'TF',
                   'vessel_name': 'MS Trollfjord',
@@ -191,17 +192,17 @@ def ferrybox_metadata(stationid):
                  'vessel': 'FA',
                  'vessel_name': 'MS Color Fantasy',
                  'plot_along_latitude': True,
-                 'dist': 0.1,'ybin_dist': 0.01},
+                 'dist': 0.1, 'ybin_dist': 0.01},
          'Oslofjorden': {'name': 'Skagerrak', 'latitude': 59.207, 'longitude': 10.7608,
                          'vessel': 'FA',
                          'vessel_name': 'MS Color Fantasy',
                          'plot_along_latitude': True,
-                         'dist': 0.35,'ybin_dist': 0.05},
+                         'dist': 0.35, 'ybin_dist': 0.05},
          'YO1': {'name': 'Skagerrak', 'latitude': 59.35, 'longitude': 10.7608,
                  'vessel': 'FA',
                  'vessel_name': 'MS Color Fantasy',
                  'plot_along_latitude': True,
-                 'dist': 0.35,'ybin_dist': 0.01},
+                 'dist': 0.35, 'ybin_dist': 0.01},
          'VR4': {'name': 'Kvænangen', 'latitude': 70.1161, 'longitude': 21.0725,
                  'vessel': 'TF',
                  'vessel_name': 'MS Trollfjord',
@@ -280,7 +281,6 @@ def get_water_sample_data(stationid, df_fb, writer):
 
 # MAIN
 def main():
-
     substations = ['Dk1', 'Im2', 'YO1',
                    'VT4', 'Oslofjorden', 'VT4',
                    'VT12', 'VT80',
@@ -289,16 +289,17 @@ def main():
                    'VR51', 'VR31', 'VT3',
                    'VT71', 'VR54', 'VR4',
                    'VR58',
-                   'VR21', 'VT42', 'VR7-VR21-VR24']
-                 #  'VR55', 'VR59', 'VR7', 'VR24', 'VR52' 'VT72']
+                   'VR21', 'VT42', 'VR7-VR21-VR24', 'VT72']
+    #  'VR55', 'VR59', 'VR7', 'VR24', 'VR52' 'VT72']
     # removed 'VR56' VR55, VR59, VR7, VR24, VR52 'VT72',
-    substations = ['VT80'] #, 'VT76', 'VR23', 'VR25', 'VT80', 'VT45', 'VT22', 'VT23', 'VT72',
-   #                'VT12']  # ,'VT22','VT22 ytre']
+    #  substations = ['VT80'] #, 'VT76', 'VR23', 'VR25', 'VT80', 'VT45', 'VT22', 'VT23', 'VT72',
+    #                'VT12']  # ,'VT22','VT22 ytre']
 
-   # substations = ['VR7-VR21-VR24'] #,'Dk1', 'Im2', 'YO1','VT4']
+    substations = ['Trondheimsfjorden']  # ,'Dk1', 'Im2', 'YO1','VT4']
+    substations = ['Dk1', 'Im2', 'YO1', 'VT4', 'Oslofjorden']
 
-    varnames = ['chla_fluorescence', 'cdom_fluorescence', 'salinity', 'turbidity', 'temperature']
-    varnames = ['chla_fluorescence'] #,'salinity', 'temperature']
+    varnames = ['chla_fluorescence','salinity', 'turbidity', 'temperature']
+    # varnames = ['chla_fluorescence'] #,'salinity', 'temperature']
 
     start_date = datetime(2020, 1, 1)
     end_date = datetime(2020, 12, 31)
@@ -312,7 +313,7 @@ def main():
             metadata = ferrybox_metadata(stationid)
             print('Creating station for {} using vessel {} and variable {}'.format(stationid, metadata['vessel_name'],
                                                                                    varname))
-            
+
             if not use_preprocessed_data and not ferrybox_calibration:
                 tsbdata = get_list_of_available_timeseries_for_vessel(metadata['vessel_name'],
                                                                       metadata['vessel'],
@@ -321,28 +322,33 @@ def main():
                                                                       varname,
                                                                       use_raw=ferrybox_calibration)
             elif use_preprocessed_data and not ferrybox_calibration:
-                if metadata['vessel']=="FA":
+                if metadata['vessel'] == "FA":
                     tsbdata = pd.read_csv("../FBdata/Final_data_2020/FA_corrected.dat", usecols=["time",
                                                                                                  "salinity",
                                                                                                  "inlet_temperature",
+                                                                                                 "turbidity_adj",
                                                                                                  "longitude",
                                                                                                  "latitude",
                                                                                                  "chla_fluorescence_c3_adj_corr"])
 
-                    tsbdata.columns = ["time","salinity","temperature","longitude","latitude","chla_fluorescence"]
+                    tsbdata.columns = ["time", "salinity", "temperature","turbidity", "longitude", "latitude","chla_fluorescence"]
 
                 elif metadata['vessel'] == "TF":
 
                     tsbdata = pd.read_csv("../FBdata/Final_data_2020/TF_corrected_v2_05022021.dat", usecols=["time",
+                                                                                                             "salinity",
+                                                                                                             "inlet_temperature",
+                                                                                                             "turbidity_adj",
                                                                                                              "longitude",
                                                                                                              "latitude",
+
                                                                                                              "raw_chla_fluorescence_c3_adj_corr"])
 
-                    tsbdata.columns = ["time","longitude","latitude","chla_fluorescence"]
-                    print(tsbdata)
-                else:
-                    raise("Unable to read data")
+                    tsbdata.columns = ["time", "salinity", "temperature", "turbidity","longitude", "latitude",
+                                       "chla_fluorescence"]
 
+                else:
+                    raise Exception("Unable to read data")
 
             if not ferrybox_calibration:
                 station = create_station(stationid, tsbdata, varname)
