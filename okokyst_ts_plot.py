@@ -96,7 +96,6 @@ def test():
             if counter < headers:
                 test = "ss"
             else:
-                print(line)
                 l = string.split(line, separator)
                 temp.append(float(l[3]))
                 salt.append(float(l[2]))

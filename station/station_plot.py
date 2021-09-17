@@ -34,7 +34,7 @@ class StationPlot:
     # Used for contour plots
     def define_variable_specifics(self, varname):
         return {"temp": {"vmin": 4, "vmax": 17, "title": "{}: Temperatur ($^o$C)".format(self.name)},
-                "salt": {"vmin": 10, "vmax": 35, "title": "{}: Saltholdighet".format(self.name)},
+                "salt": {"vmin": 25, "vmax": 35, "title": "{}: Saltholdighet".format(self.name)},
                 "ox": {"vmin": 0, "vmax": 12, "title": "{}: Oksygenkons.(mlO$_2$/L)".format(self.name)},
                 "oxsat": {"vmin": 0, "vmax": 120, "title": "{}: Oksygenmetning ($\%$)".format(self.name)},
                 "ftu": {"vmin": 0, "vmax": 5, "title": "{}: Fluorescence".format(self.name)}}[varname]
@@ -42,15 +42,15 @@ class StationPlot:
     # Used for variability over time at fixed depths
     def define_variable_specifics_3m(self, varname):
         return {"temp": {"vmin": 2, "vmax": 19, "ylabel": "Temperatur ($^o$C)", "title": "{}".format(self.name)},
-                "salt": {"vmin": 25, "vmax": 35.5, "ylabel": "Saltholdighet", "title": "{}".format(self.name)},
+                "salt": {"vmin": 25, "vmax": 35.3, "ylabel": "Saltholdighet", "title": "{}".format(self.name)},
                 "ox": {"vmin": 2, "vmax": 12, "ylabel": "Oksygenkons.(mlO$_2$/L)", "title": "{}".format(self.name)},
                 "oxsat": {"vmin": 0, "vmax": 120, "ylabel": "Oksygenmetning ($\%$)", "title": "{}".format(self.name)},
                 "ftu": {"vmin": 0, "vmax": 5, "ylabel": "Fluorescence", "title": "{}".format(self.name)}}[varname]
 
     # Used for variability over time at fixed depths  
     def define_variable_specifics_100_200m(self, varname):
-        return {"temp": {"vmin": 5, "vmax": 12, "ylabel": "Temperatur ($^o$C)", "title": "{}".format(self.name)},
-                "salt": {"vmin": 33, "vmax": 35.5, "ylabel": "Saltholdighet", "title": "{}".format(self.name)},
+        return {"temp": {"vmin": 6, "vmax": 11, "ylabel": "Temperatur ($^o$C)", "title": "{}".format(self.name)},
+                "salt": {"vmin": 34, "vmax": 35.3, "ylabel": "Saltholdighet", "title": "{}".format(self.name)},
                 "ox": {"vmin": 2, "vmax": 8, "ylabel": "Oksygenkons.(mlO$_2$/L)", "title": "{}".format(self.name)},
                 "oxsat": {"vmin": 0, "vmax": 120, "ylabel": "Oksygenmetning ($\%$)", "title": "{}".format(self.name)},
                 "ftu": {"vmin": 0, "vmax": 5, "ylabel": "Fluorescence", "title": "{}".format(self.name)}}[varname]
@@ -70,19 +70,16 @@ class StationPlot:
             os.makedirs(figures_path)
 
         if plot_type == "timeseries":
-
             start = dateObjectStart.strftime("%Y%m%d")
             stop = dateObjectEnd.strftime("%Y%m%d")
             filename = f"timeseries-{self.name}-{var_name}-{start}-to-{stop}.png"
-
-
         else:
             filename = f"{plot_type}-{self.name}-{var_name}-{selected_depth}.png"
-
         plotfileName = os.path.join(figures_path, filename)
 
 
-        if os.path.exists(plotfileName): os.remove(plotfileName)
+        if os.path.exists(plotfileName):
+            os.remove(plotfileName)
         print("Saving time series to file {}".format(plotfileName))
         plt.savefig(plotfileName, dpi=300, bbox_inches='tight')
         plt.close()
@@ -146,7 +143,7 @@ class StationPlot:
                 depthindex = np.where(Y == 100)[0][0]
         return depthindex
 
-    def createHistoricalTimeseries(self, CTDConfig):
+    def createHistoricalTimeseries(self, CTDConfig,work_dir):
         dates = [num2date(jd, units=CTDConfig.refdate, calendar="standard") for jd in self.julianDay]
 
         # Either we plot all the years or a selection (e.g. years=[2017,2018])
@@ -157,99 +154,108 @@ class StationPlot:
         n_months = 12
         smooth = False
         print("Using smoothing for timeseries: {}".format(smooth))
-        CTDConfig.selected_depths = [200]
-        for var_name in ["temp", "salt"]:  # ,"salt","ox"]:
-            fig, ax = plt.subplots(nrows=1)
-            colormap = plt.cm.plasma
-            colors = [colormap(i) for i in np.linspace(0, 0.9, len(years))]
 
-            for sub_index, selected_depth in enumerate(CTDConfig.selected_depths):
-                # Size of data is number of years for data storage
-                all_data = np.empty((len(years), n_months))
-                Z = self.define_array_for_variable(var_name)
+        if self.name in ["VT69", "VT70"]:
 
-                depthindex = np.where(self.Y == selected_depth)[0][0]
-                all_dates = np.zeros((len(years), 12))
+            if self.name in ["VT69"]:
+                CTDConfig.selected_depths = [5]
+            elif self.name in ["VT70"]:
+                CTDConfig.selected_depths = [5, 100, 200]
+            print("RUNNING HISTORICAL ", self.name, CTDConfig.selected_depths)
 
-                # Extract only data for each individual year and save by month
-                for ind, d in enumerate(dates):
-                    year_index = years.index(d.year)
-                    all_data[year_index, int(d.month - 1)] = Z[ind, depthindex]
-                    all_dates[year_index, d.month - 1] = self.julianDay[ind]
-                # Mask the data to remove months where observations may not exist
-                all_data = np.ma.masked_where(all_data < 0.1, all_data)
-                if var_name in ["salt"]:
-                    all_data = np.ma.masked_where(all_data < 28, all_data)
-                if var_name in ["salt", "temp"]:
-                    all_data = np.ma.masked_where(all_data > 50, all_data)
-                all_data = np.ma.masked_invalid(all_data)
-                legendlist = []
+            for var_name in ["temp", "salt"]:  # ,"salt","ox"]:
+                for sub_index, selected_depth in enumerate(CTDConfig.selected_depths):
+                    fig, ax = plt.subplots(nrows=1)
+                    colormap = plt.cm.plasma
+                    colors = [colormap(i) for i in np.linspace(0, 0.9, len(years))]
 
-                # Create the smoothed series of data and plot
-                for ind in range(len(years)):
-                    changed_dates = []
-                    legendlist.append("{}".format(years[ind]))
-                    alld = num2date(all_dates[ind, :], units=CTDConfig.refdate, calendar="standard")
-                    # Mock the year in dates so all plots from different years can be using the same
-                    # x-axis and be overlaid on top of eachother
-                    for d in alld:
-                        changed_dates.append(datetime.datetime(years[0], d.month, d.day, d.hour))
+                    # Size of data is number of years for data storage
+                    all_data = np.empty((len(years), n_months))
+                    Z = self.define_array_for_variable(var_name)
 
-                    # Smooth the data by creating a pandas Series object which is resampled at high frequency
-                    ser = pd.Series(all_data[ind, :], index=pd.to_datetime(changed_dates))
-                    ser = ser.dropna()
-                    if smooth:
-                        smoothed = ser.resample("60T").apply(['median'])
-                        tsint = smoothed.interpolate(method='cubic')
+                    depthindex = np.where(self.Y == selected_depth)[0][0]
+                    all_dates = np.zeros((len(years), 12))
+                    print("STATION {} DEPTH {} FOUND DEPTH {}".format(self.name, selected_depth, self.Y[depthindex]))
 
-                    # Get the vmin and vmax limits for the specific plot
-                    if selected_depth < 10:
-                        specs = self.define_variable_specifics_3m(var_name)
-                    else:
-                        specs = self.define_variable_specifics_100_200m(var_name)
-                    # ser=ser.mask(ser>36)
+                    # Extract only data for each individual year and save by month
+                    for ind, d in enumerate(dates):
+                        year_index = years.index(d.year)
+                        all_data[year_index, int(d.month - 1)] = Z[ind, depthindex]
+                        all_dates[year_index, d.month - 1] = self.julianDay[ind]
+                    # Mask the data to remove months where observations may not exist
+                    all_data = np.ma.masked_where(all_data < 0.1, all_data)
+                    if var_name in ["salt"]:
+                        all_data = np.ma.masked_where(all_data < 28, all_data)
+                    if var_name in ["salt", "temp"]:
+                        # Salinity above 35.2 not likely in inner fjords.
+                        all_data = np.ma.masked_where(all_data > 35.2, all_data)
+                    all_data = np.ma.masked_invalid(all_data)
+                    legendlist = []
 
-                    ax.set_ylim(float(specs["vmin"]), float(specs["vmax"]))
-                    if not smooth:
-                        ax = ser.loc['2013-01-01':'2030-01-01'].plot(color=colors[ind], lw=2.2, ax=ax,
-                                                                     label=str(years[ind]))
-                    # SMOOTHED version uncomment next line
-                    if smooth:
-                        ax = tsint.loc['2013-01-01':'2020-01-01'].plot(color=colors[ind], ax=ax, lw=2.2,
-                                                                       label=str(years[ind]), x_compat=True)
-                    # SHOW DOTS FOR original positions uncomment next line
-                    #   ax[ind] = ser.loc['2017-01-01':'2030-01-01'].plot(style="o",ms=5,ax=ax) #,label=str(years[ind]))
+                    # Create the smoothed series of data and plot
+                    for ind in range(len(years)):
+                        changed_dates = []
+                        legendlist.append("{}".format(years[ind]))
+                        alld = num2date(all_dates[ind, :], units=CTDConfig.refdate, calendar="standard")
+                        # Mock the year in dates so all plots from different years can be using the same
+                        # x-axis and be overlaid on top of eachother
+                        for d in alld:
+                            changed_dates.append(datetime.datetime(years[0], d.month, d.day, d.hour))
+
+                        # Smooth the data by creating a pandas Series object which is resampled at high frequency
+                        ser = pd.Series(all_data[ind, :], index=pd.to_datetime(changed_dates))
+                        ser = ser.dropna()
+                        if smooth:
+                            smoothed = ser.resample("60T").apply(['median'])
+                            tsint = smoothed.interpolate(method='cubic')
+
+                        # Get the vmin and vmax limits for the specific plot
+                        if selected_depth < 10:
+                            specs = self.define_variable_specifics_3m(var_name)
+                        else:
+                            specs = self.define_variable_specifics_100_200m(var_name)
+                        # ser=ser.mask(ser>36)
+
+                        ax.set_ylim(float(specs["vmin"]), float(specs["vmax"]))
+                        if not smooth:
+                            ax = ser.loc['2013-01-01':'2030-01-01'].plot(color=colors[ind], lw=2.2, ax=ax,
+                                                                         label=str(years[ind]))
+                        # SMOOTHED version uncomment next line
+                        if smooth:
+                            ax = tsint.loc['2013-01-01':'2020-01-01'].plot(color=colors[ind], ax=ax, lw=2.2,
+                                                                           label=str(years[ind]), x_compat=True)
+                        # SHOW DOTS FOR original positions uncomment next line
+                        #   ax[ind] = ser.loc['2017-01-01':'2030-01-01'].plot(style="o",ms=5,ax=ax) #,label=str(years[ind]))
+                        ax.xaxis.set_tick_params(reset=True)
+                        ax.xaxis.set_major_locator(mdates.MonthLocator())
+                        ax.xaxis.set_major_formatter(mdates.DateFormatter(''))
+
+                    # Make sure the month names are in Norwegian
+                    locale.setlocale(locale.LC_ALL, "no_NO")
+                    leg = ax.legend(legendlist, loc=1, prop={'size': 10})
+                    label = " {}m".format(selected_depth)
+                    ax.text(0.1, 0.1,
+                            label,
+                            size=12,
+                            horizontalalignment='right',
+                            verticalalignment='bottom',
+                            transform=ax.transAxes)
+
                     ax.xaxis.set_tick_params(reset=True)
                     ax.xaxis.set_major_locator(mdates.MonthLocator())
-                    ax.xaxis.set_major_formatter(mdates.DateFormatter(''))
+                    ax.xaxis.set_major_formatter(mdates.DateFormatter('%b'))
+                    ax.set_xlabel("Dato")
+                    ax.set_ylabel(specs["ylabel"], multialignment='center')
+                    ax.set_title(specs["title"])
 
-            # Make sure the month names are in Norwegian
-            locale.setlocale(locale.LC_ALL, "no_NO")
-            leg = ax.legend(legendlist, loc=1, prop={'size': 10})
-            for j, selected_depth in enumerate(CTDConfig.selected_depths):
-                label = " {}m".format(selected_depth)
-                ax.text(0.1, 0.1,
-                        label,
-                        size=12,
-                        horizontalalignment='right',
-                        verticalalignment='bottom',
-                        transform=ax.transAxes)
-
-            ax.xaxis.set_tick_params(reset=True)
-            ax.xaxis.set_major_locator(mdates.MonthLocator())
-            ax.xaxis.set_major_formatter(mdates.DateFormatter('%b'))
-            ax.set_xlabel("Dato")
-            ax.set_ylabel(specs["ylabel"], multialignment='center')
-            ax.set_title(specs["title"])
-
-            plt.tight_layout()
-            if not smooth:
-                self.save_to_file(CTDConfig, var_name, 'annual_variability_historical',
-                                  selected_depth=str(selected_depth))
-            else:
-                self.save_to_file(CTDConfig, var_name, 'annual_variability_historical_smoothed',
-                                  selected_depth=str(selected_depth))
-            plt.clf()
+                    plt.tight_layout()
+                    if not smooth:
+                        self.save_to_file(CTDConfig, var_name, 'annual_variability_historical',work_dir,
+                                          selected_depth=str(selected_depth))
+                    else:
+                        self.save_to_file(CTDConfig, var_name, 'annual_variability_historical_smoothed',work_dir,
+                                          selected_depth=str(selected_depth))
+                    plt.clf()
 
     def createTimeseriesPlot(self, CTDConfig, work_dir):
 
@@ -263,12 +269,12 @@ class StationPlot:
             n_months = 12
 
             if self.get_max_depth() < 100:
-                CTDConfig.selected_depths = [3]
+                CTDConfig.selected_depths = [5]
             elif self.get_max_depth() < 200:
-                CTDConfig.selected_depths = [3, 100]
+                CTDConfig.selected_depths = [5, 100]
             elif self.get_max_depth() < 300:
-                CTDConfig.selected_depths = [3, 100, 200]
-            for var_name in ["temp"]:  # ,"salt","ox"]:
+                CTDConfig.selected_depths = [5, 100, 200]
+            for var_name in ["temp","salt"]:  # ,"salt","ox"]:
                 fig, ax = plt.subplots(nrows=3)
                 if self.name in ["VT75"]:
                     fig, ax = plt.subplots(nrows=2)
@@ -363,6 +369,7 @@ class StationPlot:
 
                 plt.tight_layout()
                 self.save_to_file(CTDConfig, var_name, 'annual_variability', work_dir, selected_depth=str(selected_depth))
+                plt.clf()
         else:
             print('Empty dates', CTDConfig)
 

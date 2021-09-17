@@ -28,7 +28,7 @@ class StationData:
         self.depth.append(depth)
         self.ftu.append(ftu)
         self.julianDay.append(julianDay)
-        print("julianDay",julianDay,oxy)
+
     def getTimeRangeForStation(self, CTDConfig):
         dateObjectStart = num2date(self.julianDay[0], units=CTDConfig.refdate, calendar="standard")
         dateObjectEnd = num2date(self.julianDay[-1], units=CTDConfig.refdate, calendar="standard")
@@ -58,7 +58,6 @@ class StationData:
             if m > max_depth:
                 max_depth = m
         return max_depth
-
 
     def special_MON_cases_where_oxygen_already_in_mlOL(self, CTDConfig, current_date, d):
         # Special cases first
@@ -96,10 +95,10 @@ class StationData:
             te = np.asarray(self.temperature[d].values)
 
             # Convert from mgO/L to mlO/L for reporting
-          #  if self.survey == "MON":
-          #      ox = self.special_MON_cases_where_oxygen_already_in_mlOL(CTDConfig, current_date, d)
-          # This conversion is now done when reading the raw files.
-          #      ox = np.asarray(self.oxygen[d].values) * CTDConfig.mgperliter_to_mlperliter  # mg/L to ml/L
+            #  if self.survey == "MON":
+            #      ox = self.special_MON_cases_where_oxygen_already_in_mlOL(CTDConfig, current_date, d)
+            # This conversion is now done when reading the raw files.
+            #      ox = np.asarray(self.oxygen[d].values) * CTDConfig.mgperliter_to_mlperliter  # mg/L to ml/L
             ox = np.asarray(self.oxygen[d].values)
             oxsat = np.asarray(self.oxsat[d].values)
             if self.name not in ['SJON1', 'SJON2']:
@@ -142,70 +141,70 @@ class StationData:
                                                           fill_value=fill_value,
                                                           bounds_error=False,
                                                           kind=interpolation_method)
-            self.sectionTE[d, :] = te_interp(self.Y)
-            self.sectionSA[d, :] = sa_interp(self.Y)
-            self.sectionOX[d, :] = ox_interp(self.Y)
-            self.sectionOXS[d, :] = oxsat_interp(self.Y)
+            self.sectionTE[d, :] = np.round(te_interp(self.Y),decimals=3)
+            self.sectionSA[d, :] = np.round(sa_interp(self.Y),decimals=3)
+            self.sectionOX[d, :] = np.round(ox_interp(self.Y),decimals=3)
+            self.sectionOXS[d, :] = np.round(oxsat_interp(self.Y),decimals=3)
             if self.name not in ['SJON1', 'SJON2']:
-                self.sectionFTU[d, :] = ftu_interp(self.Y)
+                self.sectionFTU[d, :] = np.round(ftu_interp(self.Y),decimals=3)
 
     def describeStation(self, CTDConfig):
         print("-------------------------------------")
         print("Station: %s" % (self.name))
         print("-------------------------------------")
 
-        #  print("Depths: %s" % len(self.depth))
-        print("Julian dates: %s" % len(self.julianDay))
-
         stDates = num2date(self.julianDay[:], units=CTDConfig.refdate, calendar="standard")
 
         # Need to find the start and end for May-Sept and June - Aug
 
-        periods = [[5, 9], [6, 8]]
-        periods = [[1, 11]]
-        foundStart = False
-        foundEnd = False
-        year = 2020
-        foundStartFullYear = False
-        foundEndFullYear = False
-        for period in periods:
+        periods = [[2, 12]]
 
-            for d, dd in enumerate(stDates):
-                if dd.year == year and foundStart is False:
-                    indStart = d
-                    foundStart = True
-                if dd.year == year and dd.month == period[1] and foundEnd is False:
-                    indEnd = d
-                    foundEnd = True
+        years = np.arange(2013,2018,1)
+        for year in years:
+            for period in periods:
+                foundStart = False
+                foundEnd = False
 
-                if dd.year == year and foundStartFullYear is False:
-                    indStartFullYear = d
-                    foundStartFullYear = True
-                if dd.year == year:
-                    indEndFullYear = d
-                    foundEndFullYear = True
+                for d, dd in enumerate(stDates):
+                    if dd.year == year and dd.month == period[0] and foundStart is False:
+                        indStart = d
+                        foundStart = True
 
-            sa = np.asarray([item for sublist in self.salinity[indStart:indEnd] for item in sublist])
-            te = np.asarray([item for sublist in self.temperature[indStart:indEnd] for item in sublist])
-            de = np.asarray([item for sublist in self.depth[indStart:indEnd] for item in sublist])
-            ox = np.asarray([item for sublist in self.oxygen[indStart:indEnd] for item in sublist])
-            foundEnd = False
-            foundStart = False
+                    if dd.year == year and dd.month == period[1] and foundEnd is False:
+                        indEnd = d
+                        foundEnd = True
 
-            # sa = np.ma.masked_where(de > 10, sa)
-            # te = np.ma.masked_where(de > 10, te)
-            sa = np.ma.masked_invalid(sa)
-            ox = np.ma.masked_invalid(ox)
-            te = np.ma.masked_invalid(te)
+                if foundStart and foundEnd:
+                    sa = np.asarray([item for sublist in self.salinity[indStart:indEnd] for item in sublist])
+                    te = np.asarray([item for sublist in self.temperature[indStart:indEnd] for item in sublist])
+                    de = np.asarray([item for sublist in self.depth[indStart:indEnd] for item in sublist])
+                    ox = np.asarray([item for sublist in self.oxygen[indStart:indEnd] for item in sublist])
 
-            print("Period: %s to %s" % (stDates[indStart], stDates[indEnd]))
-            print("Mean salt:  %3.2f (%3.2f to %3.2f ) " % (np.ma.mean(sa),
-                                                                     sa[np.ma.argmin(sa)],
-                                                                     sa[np.ma.argmax(sa)]))
-            print("Mean temp:  %3.2f (%3.2f to %3.2f) " % (np.ma.mean(te),
-                                                                     te[np.ma.argmin(te)],
-                                                                     te[np.ma.argmax(te)]))
-            print("Mean oxygen:  %3.2f " % (np.ma.mean(ox)))
+
+                    # sa = np.ma.masked_where(de > 10, sa)
+                    # te = np.ma.masked_where(de > 10, te)
+                    sa = np.ma.masked_invalid(sa)
+                    ox = np.ma.masked_invalid(ox)
+                    te = np.ma.masked_invalid(te)
+
+                    print("Period: %s to %s" % (stDates[indStart], stDates[indEnd]))
+                    print("Mean salt:  {:3.2f} ({:3.2f} to {:3.2f} integrated salt: {:3.2f}) ".format(np.ma.mean(sa),
+                                                                                                  sa[np.ma.argmin(sa)],
+                                                                                                  sa[np.ma.argmax(sa)],
+                                                                                                  np.nansum(sa)))
+
+                    print("Mean temp:  {:3.2f} ({:3.2f} to {:3.2f}) integrated temp: {:3.2f}".format(np.ma.mean(te),
+                                                                                                 te[np.ma.argmin(te)],
+                                                                                                 te[np.ma.argmax(te)],
+                                                                                                 np.nansum(te)))
+                    ox_min = np.ma.min(ox)
+
+
+                    ox_min = min(i for i in ox if i > 0.1)
+                    min_position = np.where(ox==ox_min)
+                    print("{}-{} Min oxygen:  {:3.2f} depth: {} ".format(stDates[indStart], stDates[indEnd],
+                                                                         ox_min,
+                                                                         de[min_position][-1]))
 
 
 """
