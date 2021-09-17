@@ -56,22 +56,23 @@ serveys_lookup_table = {
     "Hardangerfjorden": {
 
         "VT8": {
-            "station.header": "STATION;VT8__",
-            "station.longitude": '__',
-            "station.latitude": '__',
-            "depth": '__'},
+            "station.header": "STATION;VT8;Hidlefjorden;59.0667;5.8000\n",
+            "station.longitude": 5.8000,
+            "station.latitude": 59.0667,
+            "depth": 125},
 
         "VR48": {
-            "station.header": "STATION;VT52;Kvinnherad;60.0096;5.954\n",
-            "station.longitude": '__',
-            "station.latitude": '__',
-            "depth": '__'},
+
+            "station.header": "STATION;VR48;Hjelmelandsfjorden;59.2435,6.1345\n",
+            "station.longitude": 6.1345,
+            "station.latitude": 59.2435,
+            "depth": 250},
 
         "VR49": {
-            "station.header": "STATION;VT52;Kvinnherad;60.0096;5.954\n",
-            "station.longitude": '__',
-            "station.latitude": '__',
-            "depth": '__'},
+            "station.header": "STATION;VT49;Jøsenfjorden Ytre;59.2746;6.2443\n",
+            "station.longitude": 6.2443,
+            "station.latitude": 59.2746,
+            "depth": 530},
 
         "VT70": {
             "station.header": "STATION;VT170;Bjornafjorden;60.1043;5.4742\n",
@@ -83,13 +84,13 @@ serveys_lookup_table = {
             "station.header": "STATION;VT74;Maurangsfjorden;60.1061;6.168\n",
             "station.longitude": 6.168,
             "station.latitude": 60.1061,
-            "depth": 230.0},
+            "depth": 240.0},
 
         "VT53": {
              "station.header": "STATION;VT53;Tveitneset;60.4014;6.4398\n",
              "station.longitude": 6.4398,
              "station.latitude": 60.4014,
-             "depth": 837.0}
+             "depth": 860.0}
 
     },
 

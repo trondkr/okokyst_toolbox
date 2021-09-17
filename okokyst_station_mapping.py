@@ -23,11 +23,12 @@ def to_rename_columns(df,old_name, new_name):
 
 
 def modify_df(df):
-    print ('modify df')
+    print ("modify_df")
     '''
     Convert columns name to the format used further in the processing steps
     '''
     # df = to_rename_columns(df, 'Press', "Depth")
+    print (df.columns)
     df = to_rename_columns(df, 'Depth(u)', "Depth")
     df = to_rename_columns(df, 'Sal.', 'Salinity')
     df = to_rename_columns(df, 'T(FTU)', 'FTU')
@@ -38,13 +39,13 @@ def modify_df(df):
     df = to_rename_columns(df, 'Opml/l', 'OxMlL')
 
     # recalculate Oxygen into Ml/l
-    print (df.columns)
+
     convert_dict = {
         'Press': float
     }
 
     df = df.astype(convert_dict)
-
+    print ("press to float")
     '''if 'OxMgL' in df.columns:
         print ('recalculate to ml/l')
         df = df.astype({'OxMgL': float})
@@ -59,17 +60,19 @@ def modify_df(df):
         df['Time'] = pd.to_datetime(df['Time'], format='%H:%M:%S').dt.strftime('%H.%M.%S')
     except Exception as e:
         print ('time', e)
-    print ('x')
 
     try:
         df = df.astype({'OxMlL': float})
     except Exception as e:
         print ('float', e)
-        df = df.astype({'OxMgL': float})
+        try:
+            df = df.astype({'OxMgL': float})
+        except:
+            print ('Probably Oxygen is missing')
 
     df = df.dropna(how='all', axis=1)
     df = df.round(4)
-    print ('modified df')
+
     return df
 
 
@@ -108,23 +111,20 @@ class processStation(object):
         except Exception as e:
             print('Error in reading the dataframe', e)
 
-        #print('\nDate', self.correct_survey_date)
         try:
             self.df_all = modify_df(self.df_all)
 
             grouped = self.df_all.groupby('Ser')
-            print ('grouped')
+
             for name, group_df in grouped:
                 self.match_stations_by_depth(group_df)
-            #groups = [unused_df for name, unused_df in grouped]
-            #print (groups)
-            #grouped.apply(self.match_stations_by_depth)
+
         except Exception as e:
             print('Error in reading the dataframe',e)
 
     def calc_depth(self):
         first_st = list(serveys_lookup_table[self.servey].keys())[0]
-
+        print ('calc depth')
         latitude = serveys_lookup_table[self.servey][first_st]["station.latitude"]
         depths = []
 
@@ -140,7 +140,6 @@ class processStation(object):
         regions = {'Leon': 'Sognefjorden', 'Kvitsoy': 'Hardangerfjorden',
                    'Hardangerfjorden': 'Hardangerfjorden', 'Sognefjorden': 'Sognefjorden'}
 
-        #regions = {'Leon': 'Sognefjorden', 'Kvitsoy': 'Hardangerfjorden'}
         for r in regions:
             name_to_check = re.compile(r, re.IGNORECASE)
             find_match = name_to_check.search(self.input_path)
@@ -157,22 +156,23 @@ class processStation(object):
 
                 df_all = pd.read_csv(self.input_path, skiprows=n, header=n-1,
                                      sep=';', decimal=',', encoding=encoding)
+
+                #print (df_all.head())
                 if len(df_all.columns) < 10:
                     print('short', df_all.columns)
                     try:
                         df_all = pd.read_csv(self.input_path, skiprows=n, header=n,
                                              sep=';', decimal=',', encoding=encoding)
                         print(df_all.columns)
-                        #df_all.head()
                         break
                     except Exception as e:
-                        print('Exception 2', e)
+                        print('Exception 2')
                         pass
 
                 else:
                     break
             except Exception as e:
-                print('Exception 1', e)
+                print('Exception 1')
                 df_all = None
 
             try:
@@ -196,6 +196,7 @@ class processStation(object):
             print ('***',df_all.columns)
         except Exception as e:
             print (e)
+
         return df_all
 
     def match_stations_by_depth(self, group):
@@ -206,24 +207,19 @@ class processStation(object):
 
         self.servey_date = group.Date.values[0]
 
-        #if self.servey_date == self.correct_survey_date:
-
-
-        # Find the max depth of the group (this cast)
-        #print (group['Depth'].values)
         max_depth = np.max(group['Depth'].max())
 
         # find the closest depth in the arr with all stations for this region
-        difs = self.stations_depths - max_depth
-        sqr_difs = np.sqrt(difs**2)
-        min_dif = np.min(sqr_difs)
+        difs =  self.stations_depths - max_depth
+        #print ('difs',difs)
+        difs_pos  = list(filter(lambda x : x > -10, difs))
+        #print (difs_pos,'filtered difs')
+        #sqr_difs = np.sqrt(difs**2)
+        min_dif = np.min(difs_pos)
 
-        print('max depth', max_depth)
-        print('min difference', min_dif)
+        print('max depth', max_depth,'min difference', min_dif, 'Time', group.Time.values[0])
 
         self.make_new_base_path()
-
-        print('Time', group.Time.values[0])
 
         if 'Salinity' not in group.columns:
             group = self.calc_salinity(group)
@@ -234,42 +230,41 @@ class processStation(object):
 
         group=group.drop(columns=['Press'])
         columns = group.columns
-        print('columns', columns)
 
-        #print ('max OxMlL', group['OxMlL'].max())
         if 'OxMgL' in columns:
             columnOrder=['Ser','Meas','Salinity','Conductivity', 'Temp', 'FTU',
                            'OptOx', 'OxMgL', 'Density', 'Depth', 'Date', 'Time']
-            print('max OxMlL', group['OxMgL'].max(), group.columns)
+            #print('max OxMlL') #, group['OxMgL'].max(), group.columns)
         else:
             print ('O2 in Ml/l')
             columnOrder=['Ser','Meas','Salinity','Conductivity', 'Temp', 'FTU',
                            'OptOx', 'OxMlL', 'Density', 'Depth', 'Date', 'Time']
-            print('max OxMlL', group['OxMlL'].max(), group.columns)
+            #print('max OxMlL') #, group['OxMlL'].max(), group.columns)
         group=group.reindex(columns=columnOrder)
-        #
+        #print ('min dif', min_dif)
         if min_dif < dif_threshold:
-            nearest_depth_id = np.where(sqr_difs == min_dif)[0][0]
+            # double check the sign of the difference (if cast went deeper than the station, do no assign)
+            nearest_depth_id = np.where(difs == min_dif)[0][0]
+            #print ('nearest_depth_id', np.where(difs == min_dif)[0][0])
+            #print ('stations list', self.stations_list)
             self.station_name = self.stations_list[nearest_depth_id]
             self.station_metadata = serveys_lookup_table[self.servey][self.station_name]
 
             #l = [os.path.split(f)[-1][:-4] for f in self.assigned]
 
-            print (self.station_name, 'already assigned stations:', self.assigned)
             if self.station_name in self.assigned:
+                print(self.station_name, 'already assigned stations:', self.assigned)
                 print ("duplicate")
                 self.station_name = self.station_name + "_duplicate"
-
-            print('station_name', self.station_name)
 
 
             # Save df matched by station
             #self.filename = os.path.join(self.base_path, self.station_name + '.txt')
             self.filename = os.path.join(self.new_base_path, self.station_name + '_temp.txt')
 
-
+            print('station_name', self.station_name)
             print('save data to file with ', self.filename, Ser)
-            #print (group['OxMlL'].values[:5])
+
             group.to_csv(self.filename,  sep=';')
 
             #Add header and save update file in the new location
@@ -277,13 +272,10 @@ class processStation(object):
             self.add_metadata_header()
 
         else:
-
             print('Was not able to find a matching station name')
 
             if max_depth < 10:
                 print("Probably it is a cleaning station ")
-
-                #filename = os.path.join(self.base_path, 'Cleaning_station', str(Ser), '.txt')
                 new_filename = os.path.join(self.new_base_path, 'Cleaning_station' + str(Ser) + '.txt')
             else:
                 print('available station depths', self.stations_depths)
@@ -329,7 +321,7 @@ class processStation(object):
 
     def add_metadata_header(self):
         header = self.station_metadata['station.header']
-        print ('adding metadata header to ', self.station_name,'.txt')
+        #print ('adding metadata header to ', self.station_name,'.txt')
         new_filename = os.path.join(self.new_base_path, self.station_name + '.txt')
         print (new_filename)
         # Open initial file, update header, save the new file in One_Drive
@@ -360,73 +352,11 @@ def manual_add_metadata_header(filepath, station_name):
         for line in read_obj:
             write_obj.write(line)
 
-    '''newfile = base_path +f'\\to_{station_name}.txt'
-    try:
-        os.rename(filepath, newfile)
-    except WindowsError:
-        os.remove(newfile)
-        os.rename(filepath, newfile)'''
     try:
         os.remove(filepath)
     except Exception as e:
         print (e)
     #os.rename(filepath, base_path +f'to_{station_name}.txt')
-
-def process_all_2020(task):
-    if task == "sognefjorden":
-        main_folder = os.path.join(k_work_dir, 'OKOKYST_NS_Nord_Leon')
-        files = [f for f in os.listdir(main_folder) if re.search('2019_saiv_leon', f, re.IGNORECASE)]
-
-    elif task == "hardangerfjorden":
-        main_folder = os.path.join(k_work_dir, "OKOKYST_NS_Nord_Kvitsoy")
-        files = [f for f in os.listdir(main_folder) if re.search('_2019', f, re.IGNORECASE)]
-
-
-    non_assigned = []
-    for file in files:
-        file_path = os.path.join(main_folder, file)
-
-        if task == "sognefjorden":
-            subfiles = glob.glob(file_path + '/**/*.txt', recursive=True)
-            txtfiles = [f for f in subfiles if (re.search('.txt', f, re.IGNORECASE) and not re.search('VT', f))]
-
-        elif task == "hardangerfjorden":
-            subfiles = glob.glob(file_path + '/**/*.txt', recursive=True)
-            txtfiles = [f for f in subfiles if (re.search('txt', f, re.IGNORECASE) and not re.search('VT', f))]
-
-
-        if len(txtfiles) > 0:
-            input_path = txtfiles[0]
-            d = processStation(input_path)
-            if set(d.assigned) != len(d.assigned):
-                print ('some stations got the same name ')
-            if len(d.non_assigned) > 0:
-                l = [os.path.split(f)[-1] for f in d.assigned]
-                if task == 'hardangerfjorden':
-                    if len(l) == 3 and 'VT69' not in l:
-                        for file in d.non_assigned:
-                            if re.search('station1', file):
-                                #newfile = os.path.split(file)[0] + '\\VT69.txt'
-                                manual_add_metadata_header(file, 'VT69')
-                            else:
-                                newfile = os.path.split(file)[0]+'_probably_VT69.txt'
-                                d.non_assigned.append(newfile)
-                                try:
-                                    os.rename(file, newfile)
-                                except WindowsError:
-                                    os.remove(newfile)
-                                    os.rename(file, newfile)
-                            d.non_assigned.remove(file)
-                else:
-                    print (l)
-                    print (d.non_assigned)
-                non_assigned.append(d.non_assigned)
-
-    print("\nCould not assign names for:")
-    for n in non_assigned:
-        print (n)
-
-
 
 
 if __name__ == "__main__":
@@ -440,7 +370,7 @@ if __name__ == "__main__":
 
 
 
-    def call_process(foldername):
+    def call_process(main_path, foldername):
         path = os.path.join(main_path, foldername)
         onedrive = path
 
@@ -457,27 +387,30 @@ if __name__ == "__main__":
 
 
     # Sognefjorden 2021
+    main_path_sognefjorden = fr"C:\Users\{user}\OneDrive - NIVA\Okokyst_CTD\Nordsjoen_Nord\Sognefjorden"
+
     #foldername = "2021-01-25"
 
     # Here the automatic assignment did not work, due to bad weather the CTD did not reach the bottom
-    #call_process("2021-02-17")
+    #call_process(main_path_sognefjorden, "2021-02-17")
     #manual_add_metadata_header(r"C:\Users\ELP\OneDrive - NIVA\Okokyst_CTD\Nordsjoen_Nord\Sognefjorden\2021-02-17\2021-02-17 CTD data\Unknown_station2.txt", 'VT16')
 
-    #call_process('2021-03-14')
-    #call_process('2021-04-18')
-    #call_process('2021-05-19')
-    #call_process('2021-06-17')
-    #call_process('2021-07-14')
-    #call_process('2021-08-18')
+    #call_process(main_path_sognefjorden, '2021-03-14')
+    #call_process(main_path_sognefjorden, '2021-04-18')
+    #call_process(main_path_sognefjorden, '2021-05-19')
+    #call_process(main_path_sognefjorden, '2021-06-17')
+    #call_process(main_path_sognefjorden, '2021-07-14')
+    #call_process(main_path_sognefjorden, '2021-08-18')
 
+    main_path_hardangerfjorden = r'C:\Users\ELP\OneDrive - NIVA\Okokyst_CTD\Nordsjoen_Nord\Hardangerfjorden'
+    #call_process(main_path_hardangerfjorden, "2021-04-20-21")
 
+    #Has to be checked, no oxygen! did not work
+    ###call_process(main_path_hardangerfjorden, "2021-05-18-20")
 
+    call_process(main_path_hardangerfjorden, "2021-07")
     ##for f in foldernames:
     ##    call_process(f)
 
-
-    #print (glob.glob(path+'\*txt'))
-    #df = pd.read_csv(r"C:\Users\ELP\OneDrive - NIVA\Okokyst_CTD\Nordsjoen_Nord\Hardangerfjorden\\2021-07\\2021-07-19 og 20.txt")
-    #print (df.head())
 
 
