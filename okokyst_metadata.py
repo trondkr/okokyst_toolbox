@@ -54,37 +54,44 @@ serveys_lookup_table = {
             "station.latitude": 68.0898}},
 
     "Hardangerfjorden": {
-        "VT52": {
+
+        "VT8": {
+            "station.header": "STATION;VT8__",
+            "station.longitude": '__',
+            "station.latitude": '__',
+            "depth": '__'},
+
+        "VR48": {
             "station.header": "STATION;VT52;Kvinnherad;60.0096;5.954\n",
-            "station.longitude": 5.954,
-            "station.latitude": 60.0096,
-            "depth": 369},
-        "VT53": {
-             "station.header": "STATION;VT53;Tveitneset;60.4014;6.4398\n",
-             "station.longitude": 6.4398,
-             "station.latitude": 60.4014,
-             "depth": 837.0}, # 700 #809
-        "VT74": {
-             "station.header": "STATION;VT74;Maurangsfjorden;60.1061;6.168\n",
-             "station.longitude": 6.168,
-             "station.latitude": 60.1061,
-             "depth": 230.0},    #231
-        "VT75": {
-            "station.header": "STATION;VT75;Fusafjorden;60.1595;5.5424\n",
-            "station.longitude": 5.5424,
-            "station.latitude": 60.1595,
-            "depth": 182},
-        "VT69": {
-            "station.header": "STATION;VT169;Korsfjorden;60.1788;5.2393\n",
-            "station.longitude": 5.2393,
-            "station.latitude": 60.1788,
-            "depth": 50.0,
-            "comment": "672 is a real depth but kvitsoy sample only until 50"},
+            "station.longitude": '__',
+            "station.latitude": '__',
+            "depth": '__'},
+
+        "VR49": {
+            "station.header": "STATION;VT52;Kvinnherad;60.0096;5.954\n",
+            "station.longitude": '__',
+            "station.latitude": '__',
+            "depth": '__'},
+
         "VT70": {
             "station.header": "STATION;VT170;Bjornafjorden;60.1043;5.4742\n",
             "station.longitude": 5.4742,
             "station.latitude": 60.1043,
-            "depth": 590.0}},  # 594 #596
+            "depth": 590.0},
+
+        "VT74": {
+            "station.header": "STATION;VT74;Maurangsfjorden;60.1061;6.168\n",
+            "station.longitude": 6.168,
+            "station.latitude": 60.1061,
+            "depth": 230.0},
+
+        "VT53": {
+             "station.header": "STATION;VT53;Tveitneset;60.4014;6.4398\n",
+             "station.longitude": 6.4398,
+             "station.latitude": 60.4014,
+             "depth": 837.0}
+
+    },
 
     "Sognefjorden": {
         "VT16": {
@@ -96,7 +103,26 @@ serveys_lookup_table = {
             "station.header": "STATION;VT79;Naersnes;60.9963;7.0556\n",
             "station.longitude": 7.0556,
             "station.latitude": 60.9963,
-            "depth": 500}}, #500
+            "depth": 500}},
+
+    "Other_stations": {
+
+        "VT52": {
+            "station.header": "STATION;VT52;Kvinnherad;60.0096;5.954\n",
+            "station.longitude": 5.954,
+            "station.latitude": 60.0096,
+            "depth": 369},
+        "VT75": {
+            "station.header": "STATION;VT75;Fusafjorden;60.1595;5.5424\n",
+            "station.longitude": 5.5424,
+            "station.latitude": 60.1595,
+            "depth": 182},
+        "VT69": {
+            "station.header": "STATION;VT169;Korsfjorden;60.1788;5.2393\n",
+            "station.longitude": 5.2393,
+            "station.latitude": 60.1788,
+            "depth": 50.0,
+            "comment": "672 is a real depth but kvitsoy sample only until 50"}},
 
     "Soerfjorden": {
         "SOE72": {

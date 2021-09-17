@@ -74,25 +74,26 @@ def modify_df(df):
 
 
 class processStation(object):
-    def __init__(self, inputpath):
+    def __init__(self, inputpath,onedrive):
 
         self.input_path = inputpath
         self.base_path = os.path.split(self.input_path)[0]
         name = os.path.split(self.input_path)[1]
+        self.onedrive = onedrive
 
-        import re
-        try:
-            y = re.findall("[0-9]", str(name))
-            x = ''.join(y)
-            print (name,x)
-            self.correct_survey_date = pd.to_datetime(x, format='%Y%m%d').strftime('%d.%m.%Y')
-            print ('correct_survey_date', self.correct_survey_date)#.values
-        except:
-            y = re.findall("[0-9]{8}", str(name))
-            x = ''.join(y)
-            print(name, x)
-            self.correct_survey_date = pd.to_datetime(x, format='%Y%m%d').strftime('%d.%m.%Y')
-            print('correct_survey_date', self.correct_survey_date)  # .values
+
+        #try:
+        #    y = re.findall("[0-9]", str(name))
+        #    x = ''.join(y)
+        #    print (name,x)
+        #    self.correct_survey_date = pd.to_datetime(x, format='%Y%m%d').strftime('%d.%m.%Y')
+        #    print ('correct_survey_date', self.correct_survey_date)#.values
+        #except:
+        #    y = re.findall("[0-9]{8}", str(name))
+        #    x = ''.join(y)
+        #    print(name, x)
+        #    self.correct_survey_date = pd.to_datetime(x, format='%Y%m%d').strftime('%d.%m.%Y')
+        #    print('correct_survey_date', self.correct_survey_date)  # .values
 
         self.non_assigned = []
         self.assigned = []
@@ -102,8 +103,12 @@ class processStation(object):
         self.stations_depths = np.array([serveys_lookup_table[self.servey][st]['depth'] for st in self.stations_list])
 
         self.df_all = self.read_convert_df()
-        self.calc_depth()
-        print('\nDate', self.correct_survey_date)
+        try:
+            self.calc_depth()
+        except Exception as e:
+            print('Error in reading the dataframe', e)
+
+        #print('\nDate', self.correct_survey_date)
         try:
             self.df_all = modify_df(self.df_all)
 
@@ -132,7 +137,10 @@ class processStation(object):
 
     def get_region_from_path(self):
 
-        regions = {'Leon': 'Sognefjorden', 'Kvitsoy': 'Hardangerfjorden'}
+        regions = {'Leon': 'Sognefjorden', 'Kvitsoy': 'Hardangerfjorden',
+                   'Hardangerfjorden': 'Hardangerfjorden', 'Sognefjorden': 'Sognefjorden'}
+
+        #regions = {'Leon': 'Sognefjorden', 'Kvitsoy': 'Hardangerfjorden'}
         for r in regions:
             name_to_check = re.compile(r, re.IGNORECASE)
             find_match = name_to_check.search(self.input_path)
@@ -184,7 +192,10 @@ class processStation(object):
             except Exception as e:
                 print('Exception 3', e)
                 df_all = None
-        print ('***',df_all.columns)
+        try:
+            print ('***',df_all.columns)
+        except Exception as e:
+            print (e)
         return df_all
 
     def match_stations_by_depth(self, group):
@@ -195,98 +206,100 @@ class processStation(object):
 
         self.servey_date = group.Date.values[0]
 
-        if self.servey_date == self.correct_survey_date:
+        #if self.servey_date == self.correct_survey_date:
 
 
-            # Find the max depth of the group (this cast)
-            #print (group['Depth'].values)
-            max_depth = np.max(group['Depth'].max())
+        # Find the max depth of the group (this cast)
+        #print (group['Depth'].values)
+        max_depth = np.max(group['Depth'].max())
 
-            # find the closest depth in the arr with all stations for this region
-            difs = self.stations_depths - max_depth
-            sqr_difs = np.sqrt(difs**2)
-            min_dif = np.min(sqr_difs)
+        # find the closest depth in the arr with all stations for this region
+        difs = self.stations_depths - max_depth
+        sqr_difs = np.sqrt(difs**2)
+        min_dif = np.min(sqr_difs)
 
-            print('max depth', max_depth)
-            print('min difference', min_dif)
+        print('max depth', max_depth)
+        print('min difference', min_dif)
 
-            self.make_new_base_path()
+        self.make_new_base_path()
 
-            print('Time', group.Time.values[0])
+        print('Time', group.Time.values[0])
 
-            if 'Salinity' not in group.columns:
-                group = self.calc_salinity(group)
-            if self.servey == 'Hardangerfjorden':
-                dif_threshold = 50
-            else:
-                dif_threshold = 50
-
-            group=group.drop(columns=['Press'])
-            columns = group.columns
-            print('columns', columns)
-
-            #print ('max OxMlL', group['OxMlL'].max())
-            if 'OxMgL' in columns:
-                columnOrder=['Ser','Meas','Salinity','Conductivity', 'Temp', 'FTU',
-                               'OptOx', 'OxMgL', 'Density', 'Depth', 'Date', 'Time']
-                print('max OxMlL', group['OxMgL'].max(), group.columns)
-            else:
-                print ('O2 in Ml/l')
-                columnOrder=['Ser','Meas','Salinity','Conductivity', 'Temp', 'FTU',
-                               'OptOx', 'OxMlL', 'Density', 'Depth', 'Date', 'Time']
-                print('max OxMlL', group['OxMlL'].max(), group.columns)
-            group=group.reindex(columns=columnOrder)
-            #
-            if min_dif < dif_threshold:
-                nearest_depth_id = np.where(sqr_difs == min_dif)[0][0]
-                self.station_name = self.stations_list[nearest_depth_id]
-                self.station_metadata = serveys_lookup_table[self.servey][self.station_name]
-
-                #l = [os.path.split(f)[-1][:-4] for f in self.assigned]
-
-                print (self.station_name, 'already assigned stations:', self.assigned)
-                if self.station_name in self.assigned:
-                    print ("duplicate")
-                    self.station_name = self.station_name + "_duplicate"
-
-                print('station_name', self.station_name)
-
-
-                # Save df matched by station
-                #self.filename = os.path.join(self.base_path, self.station_name + '.txt')
-                self.filename = os.path.join(self.new_base_path, self.station_name + '_temp.txt')
-
-
-                print('save data to file with ', self.filename, Ser)
-                #print (group['OxMlL'].values[:5])
-                group.to_csv(self.filename,  sep=';')
-
-                #Add header and save update file in the new location
-                self.assigned.append(self.station_name)
-                self.add_metadata_header()
-            else:
-
-                print('Was not able to find a matching station name')
-
-                if max_depth < 10:
-                    print("Probably it is a cleaning station ")
-
-                    #filename = os.path.join(self.base_path, 'Cleaning_station', str(Ser), '.txt')
-                    new_filename = os.path.join(self.new_base_path, 'Cleaning_station' + str(Ser) + '.txt')
-                else:
-                    print('available station depths', self.stations_depths)
-
-                    #filename = self.base_path + r'\\Unknown_station' + str(Ser) + '.txt'
-                    print('Cast Unknown_station', Ser)
-                    new_filename = self.new_base_path + r'\\Unknown_station' + str(Ser) + '.txt'
-
-                self.non_assigned.append(new_filename)
-                #group.to_csv(filename, index=False, sep=';')
-                #print (group['OxMlL'].values.max())
-                group.to_csv(new_filename, index=False, sep=';')
+        if 'Salinity' not in group.columns:
+            group = self.calc_salinity(group)
+        if self.servey == 'Hardangerfjorden':
+            dif_threshold = 50
         else:
-            print ('Date of measurement does not match date in a filename')
-            print(self.servey_date, self.correct_survey_date, self.servey_date == self.correct_survey_date)
+            dif_threshold = 50
+
+        group=group.drop(columns=['Press'])
+        columns = group.columns
+        print('columns', columns)
+
+        #print ('max OxMlL', group['OxMlL'].max())
+        if 'OxMgL' in columns:
+            columnOrder=['Ser','Meas','Salinity','Conductivity', 'Temp', 'FTU',
+                           'OptOx', 'OxMgL', 'Density', 'Depth', 'Date', 'Time']
+            print('max OxMlL', group['OxMgL'].max(), group.columns)
+        else:
+            print ('O2 in Ml/l')
+            columnOrder=['Ser','Meas','Salinity','Conductivity', 'Temp', 'FTU',
+                           'OptOx', 'OxMlL', 'Density', 'Depth', 'Date', 'Time']
+            print('max OxMlL', group['OxMlL'].max(), group.columns)
+        group=group.reindex(columns=columnOrder)
+        #
+        if min_dif < dif_threshold:
+            nearest_depth_id = np.where(sqr_difs == min_dif)[0][0]
+            self.station_name = self.stations_list[nearest_depth_id]
+            self.station_metadata = serveys_lookup_table[self.servey][self.station_name]
+
+            #l = [os.path.split(f)[-1][:-4] for f in self.assigned]
+
+            print (self.station_name, 'already assigned stations:', self.assigned)
+            if self.station_name in self.assigned:
+                print ("duplicate")
+                self.station_name = self.station_name + "_duplicate"
+
+            print('station_name', self.station_name)
+
+
+            # Save df matched by station
+            #self.filename = os.path.join(self.base_path, self.station_name + '.txt')
+            self.filename = os.path.join(self.new_base_path, self.station_name + '_temp.txt')
+
+
+            print('save data to file with ', self.filename, Ser)
+            #print (group['OxMlL'].values[:5])
+            group.to_csv(self.filename,  sep=';')
+
+            #Add header and save update file in the new location
+            self.assigned.append(self.station_name)
+            self.add_metadata_header()
+
+        else:
+
+            print('Was not able to find a matching station name')
+
+            if max_depth < 10:
+                print("Probably it is a cleaning station ")
+
+                #filename = os.path.join(self.base_path, 'Cleaning_station', str(Ser), '.txt')
+                new_filename = os.path.join(self.new_base_path, 'Cleaning_station' + str(Ser) + '.txt')
+            else:
+                print('available station depths', self.stations_depths)
+
+                #filename = self.base_path + r'\\Unknown_station' + str(Ser) + '.txt'
+                print('Cast Unknown_station', Ser)
+                print (max_depth,'max depth')
+                new_filename = self.new_base_path + r'\\Unknown_station' + str(Ser) + '.txt'
+
+            self.non_assigned.append(new_filename)
+            #group.to_csv(filename, index=False, sep=';')
+            #print (group['OxMlL'].values.max())
+            group.to_csv(new_filename, index=False, sep=';')
+        #else:
+        #    print ('Date of measurement does not match date in a filename')
+        #    print(self.servey_date, self.correct_survey_date, self.servey_date == self.correct_survey_date)
         return
 
 
@@ -308,8 +321,8 @@ class processStation(object):
     def make_new_base_path(self):
         # datetime.datetime.strptime(
         date_folder = pd.to_datetime(str(self.servey_date), format='%d.%m.%Y').strftime('%Y-%m-%d')
-        self.new_base_path = os.path.join(onedrive, self.servey, date_folder, date_folder + " CTD data")
-
+        ##self.new_base_path = os.path.join(onedrive, self.servey, date_folder, date_folder + " CTD data")
+        self.new_base_path = os.path.join(self.onedrive, date_folder + " CTD data")
         if not os.path.exists(self.new_base_path):
             os.makedirs(self.new_base_path)
 
@@ -413,81 +426,58 @@ def process_all_2020(task):
     for n in non_assigned:
         print (n)
 
+
+
+
 if __name__ == "__main__":
 
-    k_work_dir = r'K:/Avdeling/214-Oseanografi/DATABASER/OKOKYST_2017/'
-    onedrive = r'C:\Users\ELP\OneDrive - NIVA\Documents\Projects\\OKOKYST\ØKOKYST_NORDSJØENNORD_CTD'
-    task = "sognefjorden"
-    #process_all_2020(task)
-    #task = "hardangerfjorden"
+    #k_work_dir = r'K:/Avdeling/214-Oseanografi/DATABASER/OKOKYST_2017/'
+
+    #task = "sognefjorden"
+    #leon = r"K:\Avdeling\214-Oseanografi\DATABASER\OKOKYST_2017\OKOKYST_NS_Nord_Leon\\"
 
 
-    # Sognefjorden Leon
-
-    ## DECEMBER 2019 Sognefjorden Leon
-    #processStation(r'K:\Avdeling\214-Oseanografi\DATABASER\OKOKYST_2017\OKOKYST_NS_Nord_Leon\t36_Des2019_Saiv_Leon\O-19075_20191215_Leon.txt')
-    #manual_add_metadata_header(r'C:\Users\ELP\OneDrive - NIVA\Documents\Projects\OKOKYST\ØKOKYST_NORDSJØENNORD_CTD\Sognefjorden\2019-12-15\2019-12-15 CTD data\Unknown_station4.txt', 'VT16')
 
 
-    #manual_add_metadata_header(r'C:\Users\ELP\OneDrive - NIVA\Documents\Projects\OKOKYST\ØKOKYST_NORDSJØENNORD_CTD\Sognefjorden\2020-12-10\2020-12-10 CTD data\Unknown_station2.txt', 'VT16')
 
-    ## DECEMBER 2020 Sognefjorden Leon
-    #processStation(r'K:\Avdeling\214-Oseanografi\DATABASER\OKOKYST_2017\OKOKYST_NS_Nord_Leon\t49_Des2020_SAIV_Leon\O-200075_20201210_SAIV_Leon.txt')
-    #manual_add_metadata_header(r'C:\Users\ELP\OneDrive - NIVA\Documents\Projects\OKOKYST\ØKOKYST_NORDSJØENNORD_CTD\Sognefjorden\2020-12-10\2020-12-10 CTD data\Unknown_station2.txt', 'VT16')
+    def call_process(foldername):
+        path = os.path.join(main_path, foldername)
+        onedrive = path
 
-    leon = r"K:\Avdeling\214-Oseanografi\DATABASER\OKOKYST_2017\OKOKYST_NS_Nord_Leon\\"
+        files = glob.glob(path + '\*txt')
+        for f in files:
+            if 'OBS' not in f:
+                processStation(f,onedrive)
 
-    # January 2020
-    #processStation(leon + r'\t37_Janv2020_Saiv_Leon\O-19075_20200119_Leon_sal.txt')
-    # February 2020
-    #processStation(leon + "t38_Feb2020_Saiv_Leon\O-20075_20200219.txt")
-    #manual_add_metadata_header(r'C:\Users\ELP\OneDrive - NIVA\Documents\Projects\OKOKYST\ØKOKYST_NORDSJØENNORD_CTD\Sognefjorden\2020-02-19\2020-02-19 CTD data\Unknown_station4.txt',
-    #                           "VT16")
-    #March 2020
-    #processStation(leon + "t39_Mar2020_Saiv_Leon\O-20075_20200312.txt")
-    #April 2020
-    #processStation(leon + "t40_Apr2020_Saiv_Leon\O-20075_20200414_SAIV_Leon.txt")
-    #Mai 2020
-    #processStation(r'K:\Avdeling\214-Oseanografi\DATABASER\OKOKYST_2017\OKOKYST_NS_Nord_Leon\t41_Mai2020_Saiv_Leon\O-20075_20200513_SAIV_Leon.txt')
-    #June 2020
-    #processStation(leon + "t43_Jun2020_Saiv_Leon\O-20075_20200614_SAIV_Leon.txt")
-    #JULY 2020
-    #processStation(leon + r'\t44_jul2020_SAIV_Leon\O-20200715_SAIV_Leon.txt')
-    #August 2020
-    #processStation(leon+ 't45_aug2020_SAIV_Leon\O-200075-20200816_SAIV_Leonn.txt')
-    #September 2020
-    #processStation(leon + 't46_Sept2020_Saiv_Leon\O-200075_20200913_SAIV_Leon.txt')
-    #October 2020
-    processStation(r'K:\Avdeling\214-Oseanografi\DATABASER\OKOKYST_2017\OKOKYST_NS_Nord_Leon\t47_Okt2020_SAIV_Leon\O-200075_20201018_SAIV_LEON.txt')
-    #November 2020
-    #processStation(r'K:\Avdeling\214-Oseanografi\DATABASER\OKOKYST_2017\OKOKYST_NS_Nord_Leon\t48_Nov2020_SAIV_Leon\O-200075_20201110_SAIV_Leon.txt')
-    #December 2020
-    #processStation(leon + r't49_Des2020_SAIV_Leon\O-200075_20201210_SAIV_Leon.txt')
-    #manual_add_metadata_header(r'C:\Users\ELP\OneDrive - NIVA\Documents\Projects\OKOKYST\ØKOKYST_NORDSJØENNORD_CTD\Sognefjorden\2020-12-10\2020-12-10 CTD data\Unknown_station2.txt', 'VT16')
 
-    ### Hardangerfjorden Kvitsoy
+    user = 'ELP'
+    main_path = fr"C:\Users\{user}\OneDrive - NIVA\Okokyst_CTD\Nordsjoen_Nord\Sognefjorden"
+    #foldernames = [f for f in os.listdir(main_path) if re.match(r'2021', f)]
 
-    ## DECEMBER 2019
-    #processStation(r'K:\Avdeling\214-Oseanografi\DATABASER\OKOKYST_2017\OKOKYST_NS_Nord_Kvitsoy\t37_2019-12-16\ctd data\2019-12-16.txt')
 
-    ## NOVEMBER 2020
-    #processStation(r'K:\Avdeling\214-Oseanografi\DATABASER\OKOKYST_2017\OKOKYST_NS_Nord_Kvitsoy\t48_2020_11_09\2020-11-09.txt')
 
-    # SEPTEMBER 2020
-    #processStation(os.path.join(k_work_dir, r"OKOKYST_NS_Nord_Kvitsoy\t46_2020_09_21\Kvitsøy_2020-09-21 og 22.txt"))
+    # Sognefjorden 2021
+    #foldername = "2021-01-25"
 
-    #fpath = os.path.join(onedrive, r'Hardangerfjorden\2020-09-21\2020-09-21 CTD data\Unknown_station1.txt')
-    #name = 'VT69'
-    #manual_add_metadata_header("C:\\Users\\ELP\\OneDrive - NIVA\\Documents\\Projects\\\\OKOKYST\\ØKOKYST_NORDSJØENNORD_CTD\\Sognefjorden\\2019-12-15\\2019-12-15 CTD data\\\\Unknown_station4.txt",
-    #                           "VT16")
-    #manual_add_metadata_header("C:\\Users\\ELP\\OneDrive - NIVA\\Documents\\Projects\\\\OKOKYST\\ØKOKYST_NORDSJØENNORD_CTD\\Sognefjorden\\2019-12-15\\2019-12-15 CTD data\\\\Unknown_station1.txt",
-    #                           "VT16")
-    #JUNE
-    #processStation(r'K:\Avdeling\214-Oseanografi\DATABASER\OKOKYST_2017\OKOKYST_NS_Nord_Leon\t43_Jun2020_Saiv_Leon\O-20200614_SAIV_Leon.txt')
-    #JULY
-    #processStation(r'K:\Avdeling\214-Oseanografi\DATABASER\OKOKYST_2017\OKOKYST_NS_Nord_Leon\t44_jul2020_SAIV_Leon\O-20200715_SAIV_Leon.txt')
+    # Here the automatic assignment did not work, due to bad weather the CTD did not reach the bottom
+    #call_process("2021-02-17")
+    #manual_add_metadata_header(r"C:\Users\ELP\OneDrive - NIVA\Okokyst_CTD\Nordsjoen_Nord\Sognefjorden\2021-02-17\2021-02-17 CTD data\Unknown_station2.txt", 'VT16')
 
-    #processStation(r'K:\Avdeling\214-Oseanografi\DATABASER\OKOKYST_2017\OKOKYST_NS_Nord_Leon\t46_Sept2020_Saiv_Leon\O-200075_20200913_SAIV_Leon.txt')
+    #call_process('2021-03-14')
+    #call_process('2021-04-18')
+    #call_process('2021-05-19')
+    #call_process('2021-06-17')
+    #call_process('2021-07-14')
+    #call_process('2021-08-18')
 
-    ## DECEMBER 2020
-    #processStation(r'K:\Avdeling\214-Oseanografi\DATABASER\OKOKYST_2017\OKOKYST_NS_Nord_Kvitsoy\t49_2020_12_16\2020-12-16.txt')
+
+
+    ##for f in foldernames:
+    ##    call_process(f)
+
+
+    #print (glob.glob(path+'\*txt'))
+    #df = pd.read_csv(r"C:\Users\ELP\OneDrive - NIVA\Okokyst_CTD\Nordsjoen_Nord\Hardangerfjorden\\2021-07\\2021-07-19 og 20.txt")
+    #print (df.head())
+
+
