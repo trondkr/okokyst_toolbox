@@ -57,8 +57,8 @@ serveys_lookup_table = {
 
         "VT8": {
             "station.header": "STATION;VT8__",
-            "station.longitude": '__',
-            "station.latitude": '__',
+            "station.longitude": 5.8000,
+            "station.latitude": 59.0667,
             "depth": '__'},
 
         "VR48": {
@@ -104,6 +104,38 @@ serveys_lookup_table = {
             "station.longitude": 7.0556,
             "station.latitude": 60.9963,
             "depth": 500}},
+
+    "RMS": {
+
+        "VT71": {
+            "station.header": "STATION;VT71;Skinnbrokleia;62.3284;5.7551\n",
+            "station.longitude": 5.7552,
+            "station.latitude": 62.3284,
+            "depth": 70},
+        "VR51": {
+            "station.header": "STATION;VT75;Korsen;62.0944;7.0061\n",
+            "station.longitude": 7.0061,
+            "station.latitude": 62.0944,
+            "depth": 250}},
+
+    "Aqua kompetanse": {
+
+        "VR31": {
+            "station.header": "STATION;VR31;Tilremsfjorden;65.6009;12.2354\n",
+            "station.longitude": 12.2354,
+            "station.latitude": 65.6009,
+            "depth": 165},
+        "VR61": {
+            "station.header": "STATION;VR61;Frohavet soer;63.86995;9.65532\n",
+            "station.longitude": 9.65532,
+            "station.latitude": 63.86995,
+            "depth": 60},
+        "VR52": {
+            "station.header": "STATION;VR52;Broemsneset;64.4700;11.3100\n",
+            "station.longitude": 11.3100,
+            "station.latitude": 64.4700,
+            "depth": 330}},
+
 
     "Other_stations": {
 

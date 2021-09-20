@@ -138,7 +138,8 @@ class processStation(object):
     def get_region_from_path(self):
 
         regions = {'Leon': 'Sognefjorden', 'Kvitsoy': 'Hardangerfjorden',
-                   'Hardangerfjorden': 'Hardangerfjorden', 'Sognefjorden': 'Sognefjorden'}
+                   'Hardangerfjorden': 'Hardangerfjorden', 'Sognefjorden': 'Sognefjorden', 'RMS': 'RMS',
+                   'Aquakompetens': 'Aqua kompetanse'}
 
         #regions = {'Leon': 'Sognefjorden', 'Kvitsoy': 'Hardangerfjorden'}
         for r in regions:
@@ -450,11 +451,16 @@ if __name__ == "__main__":
                 processStation(f,onedrive)
 
 
-    user = 'ELP'
-    main_path = fr"C:\Users\{user}\OneDrive - NIVA\Okokyst_CTD\Nordsjoen_Nord\Sognefjorden"
+    user = 'TEG'
+    main_path = fr"C:\Users\{user}\OneDrive - NIVA\Okokyst_CTD\Norskehavet_Sor\RMS"
     #foldernames = [f for f in os.listdir(main_path) if re.match(r'2021', f)]
 
-
+    #RMS
+    call_process('03-2021')
+    #call_process('04-2021')
+    #call_process('06-2021')
+    #call_process('07-2021')
+    #call_process('08-2021')
 
     # Sognefjorden 2021
     #foldername = "2021-01-25"
