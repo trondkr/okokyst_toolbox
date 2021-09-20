@@ -22,18 +22,21 @@ def to_rename_columns(df,old_name, new_name):
     return df
 
 
-def modify_df(df):
+def modify_df(df,onedrive,filename):
     print ("modify_df")
     '''
     Convert columns name to the format used further in the processing steps
     '''
     # df = to_rename_columns(df, 'Press', "Depth")
-    print (df.columns)
+    #print (df.columns)
     df = to_rename_columns(df, 'Depth(u)', "Depth")
     df = to_rename_columns(df, 'Sal.', 'Salinity')
     df = to_rename_columns(df, 'T(FTU)', 'FTU')
     df = to_rename_columns(df, 'T (FTU)', 'FTU')
     df = to_rename_columns(df, 'OpOx %', 'OptOx')
+    df = to_rename_columns(df, 'Ox %', 'OptOx')
+    df = to_rename_columns(df, 'mg/l', 'OxMgL')
+    df = to_rename_columns(df, 'Opt', 'OptOx')
 
     df = to_rename_columns(df, 'Opmg/l', 'OxMgL')
     df = to_rename_columns(df, 'Opml/l', 'OxMlL')
@@ -46,11 +49,11 @@ def modify_df(df):
 
     df = df.astype(convert_dict)
     print ("press to float")
-    '''if 'OxMgL' in df.columns:
+    if 'OxMgL' in df.columns:
         print ('recalculate to ml/l')
         df = df.astype({'OxMgL': float})
         df['OxMgL'] = df.OxMgL.values / 1.42905
-        df = to_rename_columns(df,  'OxMgL', 'OxMlL')'''
+        df = to_rename_columns(df,  'OxMgL', 'OxMlL')
 
     try:
         df['Date'] = pd.to_datetime(df['Date'], format='%d.%m.%Y').dt.strftime('%d.%m.%Y')
@@ -72,6 +75,16 @@ def modify_df(df):
 
     df = df.dropna(how='all', axis=1)
     df = df.round(4)
+    print(set(df['OptOx'].values)=="{-999.0}")
+    print(f"{onedrive}\\NoOxygenData.txt")
+    print(set(df['OptOx'].values))
+    if len(set(df['OptOx'].values)) < 5:
+
+        er=open(f"{onedrive}\\NoOxygenData.txt","w+")
+        er.write(filename)
+
+        er.close()
+
 
     return df
 
@@ -112,7 +125,7 @@ class processStation(object):
             print('Error in reading the dataframe', e)
 
         try:
-            self.df_all = modify_df(self.df_all)
+            self.df_all = modify_df(self.df_all, self.onedrive,name)
 
             grouped = self.df_all.groupby('Ser')
 
@@ -164,7 +177,7 @@ class processStation(object):
                     try:
                         df_all = pd.read_csv(self.input_path, skiprows=n, header=n,
                                              sep=';', decimal=',', encoding=encoding)
-                        print(df_all.columns)
+                        #print(df_all.columns)
                         break
                     except Exception as e:
                         print('Exception 2')
@@ -184,7 +197,7 @@ class processStation(object):
                     try:
                         df_all = pd.read_csv(self.input_path, skiprows=n, header=n,
                                              sep=';', decimal=',')
-                        print(df_all.columns)
+                        #print(df_all.columns)
                         df_all.head()
                         break
                     except Exception as e:
@@ -382,15 +395,20 @@ if __name__ == "__main__":
 
 
     user = 'TEG'
-    main_path = fr"C:\Users\{user}\OneDrive - NIVA\Okokyst_CTD\Norskehavet_Sor\RMS"
+    main_path_RMS = fr"C:\Users\{user}\OneDrive - NIVA\Okokyst_CTD\Norskehavet_Sor\RMS"
+    main_path_aqua = fr"C:\Users\{user}\OneDrive - NIVA\Okokyst_CTD\Norskehavet_Sor\Aquakompetens"
     #foldernames = [f for f in os.listdir(main_path) if re.match(r'2021', f)]
 
     #RMS
-    call_process('03-2021')
+    #call_process(main_path_RMS,'06_2021')
     #call_process('04-2021')
     #call_process('06-2021')
     #call_process('07-2021')
     #call_process('08-2021')
+
+    #Aqua kompetanse
+    call_process(main_path_aqua,'2021-03')
+
 
     # Sognefjorden 2021
     main_path_sognefjorden = fr"C:\Users\{user}\OneDrive - NIVA\Okokyst_CTD\Nordsjoen_Nord\Sognefjorden"
@@ -414,7 +432,7 @@ if __name__ == "__main__":
     #Has to be checked, no oxygen! did not work
     ###call_process(main_path_hardangerfjorden, "2021-05-18-20")
 
-    call_process(main_path_hardangerfjorden, "2021-07")
+    #call_process(main_path_hardangerfjorden, "2021-07")
     ##for f in foldernames:
     ##    call_process(f)
 

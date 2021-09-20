@@ -125,17 +125,17 @@ serveys_lookup_table = {
             "station.header": "STATION;VR31;Tilremsfjorden;65.6009;12.2354\n",
             "station.longitude": 12.2354,
             "station.latitude": 65.6009,
-            "depth": 165},
+            "depth": 260},
         "VR61": {
             "station.header": "STATION;VR61;Frohavet soer;63.86995;9.65532\n",
             "station.longitude": 9.65532,
             "station.latitude": 63.86995,
-            "depth": 60},
+            "depth": 150},
         "VR52": {
             "station.header": "STATION;VR52;Broemsneset;64.4700;11.3100\n",
             "station.longitude": 11.3100,
             "station.latitude": 64.4700,
-            "depth": 330}},
+            "depth": 350}},
 
 
     "Other_stations": {
