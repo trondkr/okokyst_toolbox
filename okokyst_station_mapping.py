@@ -227,9 +227,9 @@ class processStation(object):
         max_depth = np.max(group['Depth'].max())
 
         # find the closest depth in the arr with all stations for this region
-        difs =  self.stations_depths - max_depth
-        print ('difs',difs)
-        difs_pos  = list(filter(lambda x : x > -1, difs))
+        difs = self.stations_depths - max_depth
+        print('difs', difs)
+        difs_pos = list(filter(lambda x : x > -1, difs))
         #print (difs_pos,'filtered difs')
         #sqr_difs = np.sqrt(difs**2)
         min_dif = np.min(difs_pos)
@@ -276,10 +276,18 @@ class processStation(object):
             # Save df matched by station
             #self.filename = os.path.join(self.base_path, self.station_name + '.txt')
             self.filename = os.path.join(self.new_base_path, self.station_name + '_temp.txt')
-
+            self.figname = os.path.join(self.new_base_path, self.station_name + '.png')
             print('Assigned station_name', self.station_name)
             ##print('save data to file with ', self.filename, Ser)
 
+
+            import matplotlib.pyplot as plt
+            plt.figure()
+            plt.style.use('ggplot')
+            plt.title(self.station_name)
+            plt.plot(group['OxMlL'],group.Depth)
+            plt.ylim(group.Depth.max(),group.Depth.min())
+            plt.savefig(self.figname)
             group.to_csv(self.filename,  sep=';')
 
             #Add header and save update file in the new location
@@ -345,7 +353,7 @@ class processStation(object):
         try:
             os.remove(self.filename)
         except Exception as e:
-            print (e)
+            print(e)
 
 def manual_add_metadata_header(filepath, station_name):
     t = serveys_lookup_table
@@ -394,7 +402,7 @@ if __name__ == "__main__":
                 processStation(f,onedrive)
 
 
-    user = 'TEG'
+    user = 'ELP'
     main_path_RMS = fr"C:\Users\{user}\OneDrive - NIVA\Okokyst_CTD\Norskehavet_Sor\RMS"
     main_path_aqua = fr"C:\Users\{user}\OneDrive - NIVA\Okokyst_CTD\Norskehavet_Sor\Aquakompetens"
     #foldernames = [f for f in os.listdir(main_path) if re.match(r'2021', f)]
@@ -430,15 +438,15 @@ if __name__ == "__main__":
 
 
     #call_process(main_path_hardangerfjorden,'2021-01-18',survey = 'Hardangerfjorden_old')
-    manual_add_metadata_header(r'C:\Users\ELP\OneDrive - NIVA\Okokyst_CTD\Nordsjoen_Nord\Hardangerfjorden\2021-01-18\2021-01-18 CTD data\Unknown_station3.txt',
-                               "VT70")
+    #manual_add_metadata_header(r'C:\Users\ELP\OneDrive - NIVA\Okokyst_CTD\Nordsjoen_Nord\Hardangerfjorden\2021-01-18\2021-01-18 CTD data\Unknown_station3.txt',
+    #                           "VT70")
     #call_process(main_path_hardangerfjorden,'2021-02-23',survey = 'Hardangerfjorden_old')
 
     #call_process(main_path_hardangerfjorden,'2021-03-22-23')#,survey = 'Hardangerfjorden_old'
     #manual_add_metadata_header(r"C:\Users\ELP\OneDrive - NIVA\Okokyst_CTD\Nordsjoen_Nord\Hardangerfjorden\2021-03-22-23\2021-03-22 CTD data\Unknown_station4.txt",
     #                           'VR49')
 
-    #call_process(main_path_hardangerfjorden, "2021-04-20-21")
+    call_process(main_path_hardangerfjorden, "2021-04-20-21")
     #call_process(main_path_hardangerfjorden, '2021-05-18-20')
 
     #call_process(main_path_hardangerfjorden, '2021-06')
