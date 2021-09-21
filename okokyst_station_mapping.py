@@ -75,17 +75,11 @@ def modify_df(df,onedrive,filename):
 
     df = df.dropna(how='all', axis=1)
     df = df.round(4)
-    print(set(df['OptOx'].values)=="{-999.0}")
-    print(f"{onedrive}\\NoOxygenData.txt")
-    print(set(df['OptOx'].values))
     if len(set(df['OptOx'].values)) < 5:
 
         er=open(f"{onedrive}\\NoOxygenData.txt","w+")
         er.write(filename)
-
         er.close()
-
-
     return df
 
 
@@ -407,7 +401,7 @@ if __name__ == "__main__":
     #call_process('08-2021')
 
     #Aqua kompetanse
-    call_process(main_path_aqua,'2021-03')
+    call_process(main_path_aqua,'2021-08')
 
 
     # Sognefjorden 2021
