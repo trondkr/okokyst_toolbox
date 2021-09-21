@@ -22,7 +22,7 @@ def to_rename_columns(df,old_name, new_name):
     return df
 
 
-def modify_df(df):
+def modify_df(df,onedrive,filename):
     #print ("modify_df")
     '''
     Convert columns name to the format used further in the processing steps
@@ -34,6 +34,9 @@ def modify_df(df):
     df = to_rename_columns(df, 'T(FTU)', 'FTU')
     df = to_rename_columns(df, 'T (FTU)', 'FTU')
     df = to_rename_columns(df, 'OpOx %', 'OptOx')
+    df = to_rename_columns(df, 'Ox %', 'OptOx')
+    df = to_rename_columns(df, 'mg/l', 'OxMgL')
+    df = to_rename_columns(df, 'Opt', 'OptOx')
 
     df = to_rename_columns(df, 'Opmg/l', 'OxMgL')
     df = to_rename_columns(df, 'Opml/l', 'OxMlL')
@@ -72,7 +75,11 @@ def modify_df(df):
 
     df = df.dropna(how='all', axis=1)
     df = df.round(4)
+    if len(set(df['OptOx'].values)) < 5:
 
+        er=open(f"{onedrive}\\NoOxygenData.txt","w+")
+        er.write(filename)
+        er.close()
     return df
 
 
@@ -119,7 +126,7 @@ class processStation(object):
             print('Error in reading the dataframe', e)
 
         try:
-            self.df_all = modify_df(self.df_all)
+            self.df_all = modify_df(self.df_all, self.onedrive,name)
 
             grouped = self.df_all.groupby('Ser')
 
@@ -145,7 +152,8 @@ class processStation(object):
     def get_region_from_path(self):
 
         regions = {'Leon': 'Sognefjorden', 'Kvitsoy': 'Hardangerfjorden',
-                   'Hardangerfjorden': 'Hardangerfjorden', 'Sognefjorden': 'Sognefjorden'}
+                   'Hardangerfjorden': 'Hardangerfjorden', 'Sognefjorden': 'Sognefjorden', 'RMS': 'RMS',
+                   'Aquakompetens': 'Aqua kompetanse'}
 
         for r in regions:
             name_to_check = re.compile(r, re.IGNORECASE)
@@ -189,7 +197,7 @@ class processStation(object):
                     try:
                         df_all = pd.read_csv(self.input_path, skiprows=n, header=n,
                                              sep=';', decimal=',')
-                        print(df_all.columns)
+                        #print(df_all.columns)
                         df_all.head()
                         break
                     except Exception as e:
@@ -347,7 +355,6 @@ def manual_add_metadata_header(filepath, station_name):
     for key in surveys:
         if station_name in t[key]:
             header = t[key][station_name]['station.header']
-            print (header)
             break
 
     new_filename = os.path.join(base_path, station_name + '.txt')
@@ -376,7 +383,7 @@ if __name__ == "__main__":
 
 
 
-    def call_process(main_path, foldername,survey = None):
+    def call_process(main_path, foldername):
         path = os.path.join(main_path, foldername)
         onedrive = path
 
@@ -384,13 +391,23 @@ if __name__ == "__main__":
         files = glob.glob(path + '\*txt')
         for f in files:
             if 'OBS' not in f:
-                processStation(f,onedrive,survey)
+                processStation(f,onedrive)
 
 
-    user = 'ELP'
-    main_path = fr"C:\Users\{user}\OneDrive - NIVA\Okokyst_CTD\Nordsjoen_Nord\Sognefjorden"
+    user = 'TEG'
+    main_path_RMS = fr"C:\Users\{user}\OneDrive - NIVA\Okokyst_CTD\Norskehavet_Sor\RMS"
+    main_path_aqua = fr"C:\Users\{user}\OneDrive - NIVA\Okokyst_CTD\Norskehavet_Sor\Aquakompetens"
     #foldernames = [f for f in os.listdir(main_path) if re.match(r'2021', f)]
 
+    #RMS
+    #call_process(main_path_RMS,'06_2021')
+    #call_process('04-2021')
+    #call_process('06-2021')
+    #call_process('07-2021')
+    #call_process('08-2021')
+
+    #Aqua kompetanse
+    call_process(main_path_aqua,'2021-08')
 
 
     # Sognefjorden 2021
@@ -434,7 +451,10 @@ if __name__ == "__main__":
 
 
 
+    #Has to be checked, no oxygen! did not work
+    ###call_process(main_path_hardangerfjorden, "2021-05-18-20")
 
+    #call_process(main_path_hardangerfjorden, "2021-07")
 
     print ('\n\n')
     ##for f in foldernames:
