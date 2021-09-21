@@ -23,12 +23,12 @@ def to_rename_columns(df,old_name, new_name):
 
 
 def modify_df(df):
-    print ("modify_df")
+    #print ("modify_df")
     '''
     Convert columns name to the format used further in the processing steps
     '''
     # df = to_rename_columns(df, 'Press', "Depth")
-    print (df.columns)
+    # (df.columns)
     df = to_rename_columns(df, 'Depth(u)', "Depth")
     df = to_rename_columns(df, 'Sal.', 'Salinity')
     df = to_rename_columns(df, 'T(FTU)', 'FTU')
@@ -45,12 +45,12 @@ def modify_df(df):
     }
 
     df = df.astype(convert_dict)
-    print ("press to float")
-    '''if 'OxMgL' in df.columns:
+    #print ("press to float")
+    if 'OxMgL' in df.columns:
         print ('recalculate to ml/l')
         df = df.astype({'OxMgL': float})
         df['OxMgL'] = df.OxMgL.values / 1.42905
-        df = to_rename_columns(df,  'OxMgL', 'OxMlL')'''
+        df = to_rename_columns(df,  'OxMgL', 'OxMlL')
 
     try:
         df['Date'] = pd.to_datetime(df['Date'], format='%d.%m.%Y').dt.strftime('%d.%m.%Y')
@@ -77,19 +77,25 @@ def modify_df(df):
 
 
 class processStation(object):
-    def __init__(self, inputpath,onedrive):
+    def __init__(self, inputpath,onedrive,survey = None):
 
         self.input_path = inputpath
         self.base_path = os.path.split(self.input_path)[0]
         name = os.path.split(self.input_path)[1]
         self.onedrive = onedrive
 
+        if survey != None:
+            self.survey = survey
+
+        else:
+            self.survey = self.get_region_from_path()
 
         #try:
         #    y = re.findall("[0-9]", str(name))
         #    x = ''.join(y)
         #    print (name,x)
-        #    self.correct_survey_date = pd.to_datetime(x, format='%Y%m%d').strftime('%d.%m.%Y')
+        #    self.correct_survey_date = pd.to_
+        #    datetime(x, format='%Y%m%d').strftime('%d.%m.%Y')
         #    print ('correct_survey_date', self.correct_survey_date)#.values
         #except:
         #    y = re.findall("[0-9]{8}", str(name))
@@ -100,10 +106,11 @@ class processStation(object):
 
         self.non_assigned = []
         self.assigned = []
-        self.servey = self.get_region_from_path()
 
-        self.stations_list = list(serveys_lookup_table[self.servey].keys())
-        self.stations_depths = np.array([serveys_lookup_table[self.servey][st]['depth'] for st in self.stations_list])
+
+
+        self.stations_list = list(serveys_lookup_table[self.survey].keys())
+        self.stations_depths = np.array([serveys_lookup_table[self.survey][st]['depth'] for st in self.stations_list])
 
         self.df_all = self.read_convert_df()
         try:
@@ -123,9 +130,9 @@ class processStation(object):
             print('Error in reading the dataframe',e)
 
     def calc_depth(self):
-        first_st = list(serveys_lookup_table[self.servey].keys())[0]
-        print ('calc depth')
-        latitude = serveys_lookup_table[self.servey][first_st]["station.latitude"]
+        first_st = list(serveys_lookup_table[self.survey].keys())[0]
+        #print ('calc depth')
+        latitude = serveys_lookup_table[self.survey][first_st]["station.latitude"]
         depths = []
 
         for p in self.df_all['Press'].values:
@@ -147,39 +154,38 @@ class processStation(object):
                 return regions[r]
 
     def read_convert_df(self):
-        print ('\n****** Reading', self.input_path)
+        print ('\n******************************')
+        print ('Reading', self.input_path)
         # read the document and skip undefined number of unneeded rows
 
         for n in range(1, 16):
-            print('Attempt N', n)
+            #print('Attempt N', n)
             try:
-
                 df_all = pd.read_csv(self.input_path, skiprows=n, header=n-1,
                                      sep=';', decimal=',', encoding=encoding)
-
                 #print (df_all.head())
                 if len(df_all.columns) < 10:
-                    print('short', df_all.columns)
+                    #print('short', df_all.columns)
                     try:
                         df_all = pd.read_csv(self.input_path, skiprows=n, header=n,
                                              sep=';', decimal=',', encoding=encoding)
-                        print(df_all.columns)
+                        #print(df_all.columns)
                         break
                     except Exception as e:
-                        print('Exception 2')
+                        #print('Exception 2')
                         pass
 
                 else:
                     break
             except Exception as e:
-                print('Exception 1')
+                #print('Exception 1')
                 df_all = None
 
             try:
                 df_all = pd.read_csv(self.input_path, skiprows=n, header=n-1,
                                      sep=';', decimal='.')
                 if len(df_all.columns) < 10:
-                    print('short', df_all.columns)
+                    #print('short', df_all.columns)
                     try:
                         df_all = pd.read_csv(self.input_path, skiprows=n, header=n,
                                              sep=';', decimal=',')
@@ -187,32 +193,35 @@ class processStation(object):
                         df_all.head()
                         break
                     except Exception as e:
-                        print('Exception 4', e)
+                        #print('Exception 4')
                         pass
             except Exception as e:
-                print('Exception 3', e)
+                #print('Exception 3')
                 df_all = None
         try:
-            print ('***',df_all.columns)
+            pass
+            #print ('Successfully read file')
+            #print (df_all.columns)
         except Exception as e:
-            print (e)
+            #print (e)
+            pass
 
         return df_all
 
     def match_stations_by_depth(self, group):
-        print('\n***********************************')
+
         # Get number of the cast
         Ser = group['Ser'].values[0]
-        print('Cast', Ser)
+        print('Processing Cast', Ser)
 
-        self.servey_date = group.Date.values[0]
+        self.survey_date = group.Date.values[0]
 
         max_depth = np.max(group['Depth'].max())
 
         # find the closest depth in the arr with all stations for this region
         difs =  self.stations_depths - max_depth
-        #print ('difs',difs)
-        difs_pos  = list(filter(lambda x : x > -10, difs))
+        print ('difs',difs)
+        difs_pos  = list(filter(lambda x : x > -1, difs))
         #print (difs_pos,'filtered difs')
         #sqr_difs = np.sqrt(difs**2)
         min_dif = np.min(difs_pos)
@@ -223,10 +232,10 @@ class processStation(object):
 
         if 'Salinity' not in group.columns:
             group = self.calc_salinity(group)
-        if self.servey == 'Hardangerfjorden':
-            dif_threshold = 50
-        else:
-            dif_threshold = 50
+        #if self.survey == 'Hardangerfjorden':
+        #    dif_threshold = 50
+        #else:
+        dif_threshold = 50
 
         group=group.drop(columns=['Press'])
         columns = group.columns
@@ -236,21 +245,19 @@ class processStation(object):
                            'OptOx', 'OxMgL', 'Density', 'Depth', 'Date', 'Time']
             #print('max OxMlL') #, group['OxMgL'].max(), group.columns)
         else:
-            print ('O2 in Ml/l')
+
             columnOrder=['Ser','Meas','Salinity','Conductivity', 'Temp', 'FTU',
                            'OptOx', 'OxMlL', 'Density', 'Depth', 'Date', 'Time']
             #print('max OxMlL') #, group['OxMlL'].max(), group.columns)
         group=group.reindex(columns=columnOrder)
-        #print ('min dif', min_dif)
+
         if min_dif < dif_threshold:
             # double check the sign of the difference (if cast went deeper than the station, do no assign)
             nearest_depth_id = np.where(difs == min_dif)[0][0]
-            #print ('nearest_depth_id', np.where(difs == min_dif)[0][0])
+
             #print ('stations list', self.stations_list)
             self.station_name = self.stations_list[nearest_depth_id]
-            self.station_metadata = serveys_lookup_table[self.servey][self.station_name]
-
-            #l = [os.path.split(f)[-1][:-4] for f in self.assigned]
+            self.station_metadata = serveys_lookup_table[self.survey][self.station_name]
 
             if self.station_name in self.assigned:
                 print(self.station_name, 'already assigned stations:', self.assigned)
@@ -262,8 +269,8 @@ class processStation(object):
             #self.filename = os.path.join(self.base_path, self.station_name + '.txt')
             self.filename = os.path.join(self.new_base_path, self.station_name + '_temp.txt')
 
-            print('station_name', self.station_name)
-            print('save data to file with ', self.filename, Ser)
+            print('Assigned station_name', self.station_name)
+            ##print('save data to file with ', self.filename, Ser)
 
             group.to_csv(self.filename,  sep=';')
 
@@ -278,11 +285,9 @@ class processStation(object):
                 print("Probably it is a cleaning station ")
                 new_filename = os.path.join(self.new_base_path, 'Cleaning_station' + str(Ser) + '.txt')
             else:
-                print('available station depths', self.stations_depths)
-
+                #print('available station depths', self.stations_depths)
                 #filename = self.base_path + r'\\Unknown_station' + str(Ser) + '.txt'
                 print('Cast Unknown_station', Ser)
-                print (max_depth,'max depth')
                 new_filename = self.new_base_path + r'\\Unknown_station' + str(Ser) + '.txt'
 
             self.non_assigned.append(new_filename)
@@ -291,7 +296,7 @@ class processStation(object):
             group.to_csv(new_filename, index=False, sep=';')
         #else:
         #    print ('Date of measurement does not match date in a filename')
-        #    print(self.servey_date, self.correct_survey_date, self.servey_date == self.correct_survey_date)
+        #    print(self.survey_date, self.correct_survey_date, self.survey_date == self.correct_survey_date)
         return
 
 
@@ -312,8 +317,8 @@ class processStation(object):
 
     def make_new_base_path(self):
         # datetime.datetime.strptime(
-        date_folder = pd.to_datetime(str(self.servey_date), format='%d.%m.%Y').strftime('%Y-%m-%d')
-        ##self.new_base_path = os.path.join(onedrive, self.servey, date_folder, date_folder + " CTD data")
+        date_folder = pd.to_datetime(str(self.survey_date), format='%d.%m.%Y').strftime('%Y-%m-%d')
+        ##self.new_base_path = os.path.join(onedrive, self.survey, date_folder, date_folder + " CTD data")
         self.new_base_path = os.path.join(self.onedrive, date_folder + " CTD data")
         if not os.path.exists(self.new_base_path):
             os.makedirs(self.new_base_path)
@@ -323,7 +328,7 @@ class processStation(object):
         header = self.station_metadata['station.header']
         #print ('adding metadata header to ', self.station_name,'.txt')
         new_filename = os.path.join(self.new_base_path, self.station_name + '.txt')
-        print (new_filename)
+        print ('save data to', new_filename)
         # Open initial file, update header, save the new file in One_Drive
         with open(self.filename, 'r') as read_obj, open(new_filename, 'w') as write_obj:
             write_obj.write(header)
@@ -338,10 +343,11 @@ def manual_add_metadata_header(filepath, station_name):
     t = serveys_lookup_table
     base_path = os.path.split(filepath)[0]
 
-    serveys = t.keys()
-    for key in serveys:
+    surveys = t.keys()
+    for key in surveys:
         if station_name in t[key]:
             header = t[key][station_name]['station.header']
+            print (header)
             break
 
     new_filename = os.path.join(base_path, station_name + '.txt')
@@ -370,14 +376,15 @@ if __name__ == "__main__":
 
 
 
-    def call_process(main_path, foldername):
+    def call_process(main_path, foldername,survey = None):
         path = os.path.join(main_path, foldername)
         onedrive = path
+
 
         files = glob.glob(path + '\*txt')
         for f in files:
             if 'OBS' not in f:
-                processStation(f,onedrive)
+                processStation(f,onedrive,survey)
 
 
     user = 'ELP'
@@ -403,12 +410,33 @@ if __name__ == "__main__":
     #call_process(main_path_sognefjorden, '2021-08-18')
 
     main_path_hardangerfjorden = r'C:\Users\ELP\OneDrive - NIVA\Okokyst_CTD\Nordsjoen_Nord\Hardangerfjorden'
+
+
+    #call_process(main_path_hardangerfjorden,'2021-01-18',survey = 'Hardangerfjorden_old')
+    manual_add_metadata_header(r'C:\Users\ELP\OneDrive - NIVA\Okokyst_CTD\Nordsjoen_Nord\Hardangerfjorden\2021-01-18\2021-01-18 CTD data\Unknown_station3.txt',
+                               "VT70")
+    #call_process(main_path_hardangerfjorden,'2021-02-23',survey = 'Hardangerfjorden_old')
+
+    #call_process(main_path_hardangerfjorden,'2021-03-22-23')#,survey = 'Hardangerfjorden_old'
+    #manual_add_metadata_header(r"C:\Users\ELP\OneDrive - NIVA\Okokyst_CTD\Nordsjoen_Nord\Hardangerfjorden\2021-03-22-23\2021-03-22 CTD data\Unknown_station4.txt",
+    #                           'VR49')
+
     #call_process(main_path_hardangerfjorden, "2021-04-20-21")
+    #call_process(main_path_hardangerfjorden, '2021-05-18-20')
 
-    #Has to be checked, no oxygen! did not work
-    ###call_process(main_path_hardangerfjorden, "2021-05-18-20")
+    #call_process(main_path_hardangerfjorden, '2021-06')
 
-    call_process(main_path_hardangerfjorden, "2021-07")
+
+    #call_process(main_path_hardangerfjorden, "2021-07")
+    #call_process(main_path_hardangerfjorden, '2021-08')
+
+
+
+
+
+
+
+    print ('\n\n')
     ##for f in foldernames:
     ##    call_process(f)
 
