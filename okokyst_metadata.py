@@ -53,6 +53,39 @@ serveys_lookup_table = {
             "station.longitude": 16.184,
             "station.latitude": 68.0898}},
 
+    "Hardangerfjorden_old": {
+        "VT52": {
+            "station.header": "STATION;VT52;Kvinnherad;60.0096;5.954\n",
+            "station.longitude": 5.954,
+            "station.latitude": 60.0096,
+            "depth": 369},
+        "VT53": {
+            "station.header": "STATION;VT53;Tveitneset;60.4014;6.4398\n",
+            "station.longitude": 6.4398,
+            "station.latitude": 60.4014,
+            "depth": 850.0},  # 700 #809
+        "VT74": {
+            "station.header": "STATION;VT74;Maurangsfjorden;60.1061;6.168\n",
+            "station.longitude": 6.168,
+            "station.latitude": 60.1061,
+            "depth": 230.0},  # 231
+        "VT75": {
+            "station.header": "STATION;VT75;Fusafjorden;60.1595;5.5424\n",
+            "station.longitude": 5.5424,
+            "station.latitude": 60.1595,
+            "depth": 182},
+        "VT69": {
+            "station.header": "STATION;VT169;Korsfjorden;60.1788;5.2393\n",
+            "station.longitude": 5.2393,
+            "station.latitude": 60.1788,
+            "depth": 75.0,
+            "comment": "672 is a real depth but kvitsoy sample only until 50"},
+        "VT70": {
+            "station.header": "STATION;VT170;Bjornafjorden;60.1043;5.4742\n",
+            "station.longitude": 5.4742,
+            "station.latitude": 60.1043,
+            "depth": 590.0}},  # 594 #596
+
     "Hardangerfjorden": {
 
         "VT8": {
@@ -66,7 +99,7 @@ serveys_lookup_table = {
             "station.header": "STATION;VR48;Hjelmelandsfjorden;59.2435,6.1345\n",
             "station.longitude": 6.1345,
             "station.latitude": 59.2435,
-            "depth": 250},
+            "depth": 265},
 
         "VR49": {
             "station.header": "STATION;VT49;Jøsenfjorden Ytre;59.2746;6.2443\n",
