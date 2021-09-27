@@ -53,8 +53,8 @@ python okokyst_processing.py
 
 
 ### Examples
-Below is an example of temperature contour plot using this toolbox for Sørfjorden SOE72 for three years of monthly surveys:
-![Sørfjorden SOE72](Figures/timeseries-SOE72-temp-20170331-to-20191209.png)
+Below is an example of temperature contour plot using this toolbox for Hardangerfjorden station VT79 for three years of monthly surveys:
+![Hardangerfjorden VT79](example/VT79-01.png)
 
 You can also plot calssical TS plot for the same station:
-![Sørfjorden SOE72](Figures/TS_SOE72.png)
+![Hardangerfjorden VT53](example/VT53-salt-temp-2020-01.png)

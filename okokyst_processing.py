@@ -1,4 +1,3 @@
-import xarray as xr
 import os
 from datetime import datetime
 
@@ -18,7 +17,7 @@ import okokyst_station_mapping as sm
 __author__ = 'Trond Kristiansen'
 __email__ = 'trond.kristiansen@niva.no'
 __created__ = datetime(2017, 2, 24)
-__modified__ = datetime(2021, 2, 10)
+__modified__ = datetime(2021, 9, 27)
 __version__ = "1.0"
 __status__ = "Development"
 
@@ -334,23 +333,24 @@ def main(surveys, months, CTDConfig):
 
         if CTDConfig.survey == "Hardangerfjorden":
 
-            basepath = os.path.join(work_dir, 'ØKOKYST_NORDSJØENNORD_CTD/Hardangerfjorden/')
+            basepath = os.path.join(work_dir, 'Hardangerfjorden/')
 
             projectid = '10526'
             method = 'Saiv CTD s/n 1270'
             projectname = 'OKOKYST Nordsjoen Nord'
             subStations_before_2020 = ["VT70", "VT69", "VT74", "VT53", "VT52", "VT75"]
-            subStations = ["VT70", "VT69", "VT74", "VT53"]
-            stationid = ["68910", "68908", "68913", "68911"]
+            subStations = ["VT70", "VT74", "VT53","VT8","VR48","VR49"]
+            stationid = ["68910", "68913", "68911","missing_add_me", "missing_add_me","missing_add_me"]
 
-          #  subStations = ["VT70"]
-          #  stationid = ["68910"]
+            subStations = ["VR48"]
+            stationid = ["missing_add_me"]
 
-      #      subStations = ["VT53"]
-      #      stationid = ["68911"]
+      #      subStations = ["VR49"]
+      #      stationid = ["missing_add_me"]
+
 
         if CTDConfig.survey == "Sognefjorden":
-            basepath = os.path.join(work_dir, 'ØKOKYST_NORDSJØENNORD_CTD/Sognefjorden')
+            basepath = os.path.join(work_dir, 'Sognefjorden')
 
             projectid = '10526'
             method = 'Saiv CTD s/n 1330'
@@ -388,10 +388,10 @@ def main(surveys, months, CTDConfig):
                         if strmonth in months:
                             filename = okokyst_tools.locateFile(dirLevel2, subStation)
 
-                            if CTDConfig.debug:
-                                print("=> Identified correct file: {} for month {}".format(filename, strmonth))
-
                             if filename != None:
+                                if CTDConfig.debug:
+                                    print("=> Identified correct file: {} for month {}".format(filename, strmonth))
+
                                 bb = os.path.basename(filename)
                                 filestation = os.path.splitext(bb)
 
@@ -433,14 +433,13 @@ def main(surveys, months, CTDConfig):
 
 if __name__ == "__main__":
 
-    work_dir = "/Users/trondkr/Dropbox/"
-    #work_dir = r"C:\Users\ELP\OneDrive - NIVA\Documents\Projects\OKOKYST"
-
+    #work_dir = "/Users/trondkr/Dropbox/"
+    work_dir = r"/Users/trondkr/OneDrive - NIVA/Okokyst_CTD/Nordsjoen_Nord/"
     # EDIT
     #surveys = ["Sognefjorden"]
     #"Hardangerfjorden","MON"
     surveys = ["Hardangerfjorden", "Sognefjorden"]
-  #  surveys = ["Hardangerfjorden"]
+    surveys = ["Sognefjorden"]
 
     months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
 
@@ -453,11 +452,11 @@ if __name__ == "__main__":
     # ØKOKYST should use downcast
 
     CTDConfig = CTDConfig.CTDConfig(createStationPlot=False,
-                                    createTSPlot=False,
-                                    createContourPlot=False,
+                                    createTSPlot=True,
+                                    createContourPlot=True,
                                     createTimeseriesPlot=False,
                                     binDataWriteToNetCDF=False,
-                                    describeStation=True,
+                                    describeStation=False,
                                     createHistoricalTimeseries=False,
                                     showStats=False,
                                     plotStationMap=False,
@@ -468,7 +467,7 @@ if __name__ == "__main__":
                                     oxsatName='OptOx',
                                     refdate="seconds since 1970-01-01:00:00:00",
                                     selected_depths=selected_depths,
-                                    write_to_excel=True,
+                                    write_to_excel=False,
                                     conductivity_to_salinity=False,
                                     debug=True)
 

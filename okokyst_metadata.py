@@ -2,7 +2,7 @@
 # plotted using this package
 
 
-serveys_lookup_table = {
+surveys_lookup_table = {
     'MON': {
         "NORD1": {
             "station.header":     "STATION;NORD1;MON;67.7638;15.3131\n",
@@ -53,40 +53,18 @@ serveys_lookup_table = {
             "station.longitude": 16.184,
             "station.latitude": 68.0898}},
 
-    "Hardangerfjorden_old": {
+    "Hardangerfjorden": {
         "VT52": {
             "station.header": "STATION;VT52;Kvinnherad;60.0096;5.954\n",
             "station.longitude": 5.954,
             "station.latitude": 60.0096,
             "depth": 369},
+
         "VT53": {
             "station.header": "STATION;VT53;Tveitneset;60.4014;6.4398\n",
             "station.longitude": 6.4398,
             "station.latitude": 60.4014,
-            "depth": 850.0},  # 700 #809
-        "VT74": {
-            "station.header": "STATION;VT74;Maurangsfjorden;60.1061;6.168\n",
-            "station.longitude": 6.168,
-            "station.latitude": 60.1061,
-            "depth": 230.0},  # 231
-        "VT75": {
-            "station.header": "STATION;VT75;Fusafjorden;60.1595;5.5424\n",
-            "station.longitude": 5.5424,
-            "station.latitude": 60.1595,
-            "depth": 182},
-        "VT69": {
-            "station.header": "STATION;VT169;Korsfjorden;60.1788;5.2393\n",
-            "station.longitude": 5.2393,
-            "station.latitude": 60.1788,
-            "depth": 75.0,
-            "comment": "672 is a real depth but kvitsoy sample only until 50"},
-        "VT70": {
-            "station.header": "STATION;VT170;Bjornafjorden;60.1043;5.4742\n",
-            "station.longitude": 5.4742,
-            "station.latitude": 60.1043,
-            "depth": 590.0}},  # 594 #596
-
-    "Hardangerfjorden": {
+            "depth": 860.0},
 
         "VT8": {
             "station.header": "STATION;VT8;Hidlefjorden;59.0667;5.8000\n",
@@ -95,17 +73,23 @@ serveys_lookup_table = {
             "depth": 125},
 
         "VR48": {
-
             "station.header": "STATION;VR48;Hjelmelandsfjorden;59.2435,6.1345\n",
             "station.longitude": 6.1345,
             "station.latitude": 59.2435,
             "depth": 265},
 
         "VR49": {
-            "station.header": "STATION;VT49;Jøsenfjorden Ytre;59.2746;6.2443\n",
+            "station.header": "STATION;VT49;Joesenfjorden Ytre;59.2746;6.2443\n",
             "station.longitude": 6.2443,
             "station.latitude": 59.2746,
             "depth": 530},
+
+        "VT69": {
+            "station.header": "STATION;VT169;Korsfjorden;60.1788;5.2393\n",
+            "station.longitude": 5.2393,
+            "station.latitude": 60.1788,
+            "depth": 75.0,
+            "comment": "672 is a real depth but Kvitsoy sample only until 50"},
 
         "VT70": {
             "station.header": "STATION;VT170;Bjornafjorden;60.1043;5.4742\n",
@@ -119,12 +103,11 @@ serveys_lookup_table = {
             "station.latitude": 60.1061,
             "depth": 240.0},
 
-        "VT53": {
-             "station.header": "STATION;VT53;Tveitneset;60.4014;6.4398\n",
-             "station.longitude": 6.4398,
-             "station.latitude": 60.4014,
-             "depth": 860.0}
-
+        "VT75": {
+            "station.header": "STATION;VT75;Fusafjorden;60.1595;5.5424\n",
+            "station.longitude": 5.5424,
+            "station.latitude": 60.1595,
+            "depth": 182},
     },
 
     "Sognefjorden": {
@@ -225,11 +208,11 @@ def addStationMeadata(station, CTDConfig, options=None):
     if options:
         station.mainHeader = "Ser;Meas;Salinity;Conductivity;Temp;FTU;OptOx;OxMgL;Density;S.vel;Depth;Date;Time\n"
 
-    station_metadata = serveys_lookup_table[station.survey][station.name]
+    station_metadata = surveys_lookup_table[station.survey][station.name]
     station.header = station_metadata['station.header']
     station.longitude = station_metadata['station.longitude']
     station.latitude = station_metadata['station.latitude']
 
 
 if __name__ == '__main__':
-    print(serveys_lookup_table['Hardangerfjorden']['VT75']['station.header'])
+    print(surveys_lookup_table['Hardangerfjorden']['VT75']['station.header'])

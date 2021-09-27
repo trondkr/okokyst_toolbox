@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
 import datetime
-from okokyst_metadata import serveys_lookup_table
+from okokyst_metadata import surveys_lookup_table
 import os
 import re
 import glob
@@ -116,8 +116,8 @@ class processStation(object):
 
 
 
-        self.stations_list = list(serveys_lookup_table[self.survey].keys())
-        self.stations_depths = np.array([serveys_lookup_table[self.survey][st]['depth'] for st in self.stations_list])
+        self.stations_list = list(surveys_lookup_table[self.survey].keys())
+        self.stations_depths = np.array([surveys_lookup_table[self.survey][st]['depth'] for st in self.stations_list])
 
         self.df_all = self.read_convert_df()
         try:
@@ -137,9 +137,9 @@ class processStation(object):
             print('Error in reading the dataframe',e)
 
     def calc_depth(self):
-        first_st = list(serveys_lookup_table[self.survey].keys())[0]
+        first_st = list(surveys_lookup_table[self.survey].keys())[0]
         #print ('calc depth')
-        latitude = serveys_lookup_table[self.survey][first_st]["station.latitude"]
+        latitude = surveys_lookup_table[self.survey][first_st]["station.latitude"]
         depths = []
 
         for p in self.df_all['Press'].values:
@@ -265,7 +265,7 @@ class processStation(object):
 
             #print ('stations list', self.stations_list)
             self.station_name = self.stations_list[nearest_depth_id]
-            self.station_metadata = serveys_lookup_table[self.survey][self.station_name]
+            self.station_metadata = surveys_lookup_table[self.survey][self.station_name]
 
             if self.station_name in self.assigned:
                 print(self.station_name, 'already assigned stations:', self.assigned)
@@ -356,7 +356,7 @@ class processStation(object):
             print(e)
 
 def manual_add_metadata_header(filepath, station_name):
-    t = serveys_lookup_table
+    t = surveys_lookup_table
     base_path = os.path.split(filepath)[0]
 
     surveys = t.keys()
