@@ -10,6 +10,7 @@ Pods/*
 *.png
 __pycache__/*
 **/*.nc
+xlsfiles/*
 **/__pycache__/*
 *.pyc
 *with_corners/*
