@@ -53,8 +53,9 @@ python okokyst_processing.py
 
 
 ### Examples
-Below is an example of temperature contour plot using this toolbox for Hardangerfjorden station VT79 for three years of monthly surveys:
+Below is an example of various contour plots using this toolbox for station VT79 in 
+Hardangerfjorden. Data period is monthly from 2017 to December 2020:
 ![Hardangerfjorden VT79](example/VT79-01.png)
 
-You can also plot calssical TS plot for the same station:
+You can also plot timeseries for stations VT53:
 ![Hardangerfjorden VT53](example/VT53-salt-temp-2020-01.png)
