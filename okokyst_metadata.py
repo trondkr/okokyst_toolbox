@@ -53,22 +53,22 @@ serveys_lookup_table = {
             "station.longitude": 16.184,
             "station.latitude": 68.0898}},
 
-    "Hardangerfjorden": {
+    "Hardangerfjorden_old": {
         "VT52": {
             "station.header": "STATION;VT52;Kvinnherad;60.0096;5.954\n",
             "station.longitude": 5.954,
             "station.latitude": 60.0096,
             "depth": 369},
         "VT53": {
-             "station.header": "STATION;VT53;Tveitneset;60.4014;6.4398\n",
-             "station.longitude": 6.4398,
-             "station.latitude": 60.4014,
-             "depth": 837.0}, # 700 #809
+            "station.header": "STATION;VT53;Tveitneset;60.4014;6.4398\n",
+            "station.longitude": 6.4398,
+            "station.latitude": 60.4014,
+            "depth": 850.0},  # 700 #809
         "VT74": {
-             "station.header": "STATION;VT74;Maurangsfjorden;60.1061;6.168\n",
-             "station.longitude": 6.168,
-             "station.latitude": 60.1061,
-             "depth": 230.0},    #231
+            "station.header": "STATION;VT74;Maurangsfjorden;60.1061;6.168\n",
+            "station.longitude": 6.168,
+            "station.latitude": 60.1061,
+            "depth": 230.0},  # 231
         "VT75": {
             "station.header": "STATION;VT75;Fusafjorden;60.1595;5.5424\n",
             "station.longitude": 5.5424,
@@ -78,13 +78,54 @@ serveys_lookup_table = {
             "station.header": "STATION;VT169;Korsfjorden;60.1788;5.2393\n",
             "station.longitude": 5.2393,
             "station.latitude": 60.1788,
-            "depth": 50.0,
+            "depth": 75.0,
             "comment": "672 is a real depth but kvitsoy sample only until 50"},
         "VT70": {
             "station.header": "STATION;VT170;Bjornafjorden;60.1043;5.4742\n",
             "station.longitude": 5.4742,
             "station.latitude": 60.1043,
             "depth": 590.0}},  # 594 #596
+
+    "Hardangerfjorden": {
+
+        "VT8": {
+            "station.header": "STATION;VT8;Hidlefjorden;59.0667;5.8000\n",
+            "station.longitude": 5.8000,
+            "station.latitude": 59.0667,
+            "depth": 125},
+
+        "VR48": {
+
+            "station.header": "STATION;VR48;Hjelmelandsfjorden;59.2435,6.1345\n",
+            "station.longitude": 6.1345,
+            "station.latitude": 59.2435,
+            "depth": 265},
+
+        "VR49": {
+            "station.header": "STATION;VT49;Jøsenfjorden Ytre;59.2746;6.2443\n",
+            "station.longitude": 6.2443,
+            "station.latitude": 59.2746,
+            "depth": 530},
+
+        "VT70": {
+            "station.header": "STATION;VT170;Bjornafjorden;60.1043;5.4742\n",
+            "station.longitude": 5.4742,
+            "station.latitude": 60.1043,
+            "depth": 590.0},
+
+        "VT74": {
+            "station.header": "STATION;VT74;Maurangsfjorden;60.1061;6.168\n",
+            "station.longitude": 6.168,
+            "station.latitude": 60.1061,
+            "depth": 240.0},
+
+        "VT53": {
+             "station.header": "STATION;VT53;Tveitneset;60.4014;6.4398\n",
+             "station.longitude": 6.4398,
+             "station.latitude": 60.4014,
+             "depth": 860.0}
+
+    },
 
     "Sognefjorden": {
         "VT16": {
@@ -96,7 +137,58 @@ serveys_lookup_table = {
             "station.header": "STATION;VT79;Naersnes;60.9963;7.0556\n",
             "station.longitude": 7.0556,
             "station.latitude": 60.9963,
-            "depth": 500}}, #500
+            "depth": 500}},
+
+    "RMS": {
+
+        "VT71": {
+            "station.header": "STATION;VT71;Skinnbrokleia;62.3284;5.7551\n",
+            "station.longitude": 5.7552,
+            "station.latitude": 62.3284,
+            "depth": 70},
+        "VR51": {
+            "station.header": "STATION;VT75;Korsen;62.0944;7.0061\n",
+            "station.longitude": 7.0061,
+            "station.latitude": 62.0944,
+            "depth": 250}},
+
+    "Aqua kompetanse": {
+
+        "VR31": {
+            "station.header": "STATION;VR31;Tilremsfjorden;65.6009;12.2354\n",
+            "station.longitude": 12.2354,
+            "station.latitude": 65.6009,
+            "depth": 260},
+        "VR61": {
+            "station.header": "STATION;VR61;Frohavet soer;63.86995;9.65532\n",
+            "station.longitude": 9.65532,
+            "station.latitude": 63.86995,
+            "depth": 150},
+        "VR52": {
+            "station.header": "STATION;VR52;Broemsneset;64.4700;11.3100\n",
+            "station.longitude": 11.3100,
+            "station.latitude": 64.4700,
+            "depth": 350}},
+
+
+    "Other_stations": {
+
+        "VT52": {
+            "station.header": "STATION;VT52;Kvinnherad;60.0096;5.954\n",
+            "station.longitude": 5.954,
+            "station.latitude": 60.0096,
+            "depth": 369},
+        "VT75": {
+            "station.header": "STATION;VT75;Fusafjorden;60.1595;5.5424\n",
+            "station.longitude": 5.5424,
+            "station.latitude": 60.1595,
+            "depth": 182},
+        "VT69": {
+            "station.header": "STATION;VT169;Korsfjorden;60.1788;5.2393\n",
+            "station.longitude": 5.2393,
+            "station.latitude": 60.1788,
+            "depth": 50.0,
+            "comment": "672 is a real depth but kvitsoy sample only until 50"}},
 
     "Soerfjorden": {
         "SOE72": {
