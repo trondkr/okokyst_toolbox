@@ -11,6 +11,7 @@ Pods/*
 __pycache__/*
 **/*.nc
 xlsfiles/*
+!examples/*.png
 **/__pycache__/*
 *.pyc
 *with_corners/*
