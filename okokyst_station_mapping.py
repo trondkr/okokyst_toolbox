@@ -77,7 +77,7 @@ def modify_df(df,onedrive,filename):
     df = df.round(4)
     if len(set(df['OptOx'].values)) < 5:
 
-        er=open(f"{onedrive}\\NoOxygenData.txt","w+")
+        er=open(f"{onedrive}\\Errors\\NoOxygenData.txt","w+")
         er.write(filename)
         er.close()
     return df
@@ -401,7 +401,7 @@ if __name__ == "__main__":
     #call_process('08-2021')
 
     #Aqua kompetanse
-    call_process(main_path_aqua,'2021-08')
+    call_process(main_path_aqua,'2021-03')
 
 
     # Sognefjorden 2021
