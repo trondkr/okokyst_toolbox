@@ -135,7 +135,7 @@ surveys_lookup_table = {
             "station.latitude": 62.0944,
             "depth": 250}},
 
-    "Aqua kompetanse": {
+    "Aqua_kompetanse": {
 
         "VR31": {
             "station.header": "STATION;VR31;Tilremsfjorden;65.6009;12.2354\n",

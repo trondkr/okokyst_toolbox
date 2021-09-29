@@ -257,7 +257,7 @@ class StationPlot:
                                           selected_depth=str(selected_depth))
                     plt.clf()
 
-    def createTimeseriesPlot(self, CTDConfig, work_dir):
+    def createTimeseriesPlot(self, CTDConfig):
 
         dates = [num2date(jd, units=CTDConfig.refdate, calendar="standard") for jd in self.julianDay]
         if len(dates)> 0:
@@ -368,13 +368,16 @@ class StationPlot:
                     ax[0].set_title(specs["title"])
 
                 plt.tight_layout()
-                self.save_to_file(CTDConfig, var_name, 'annual_variability', work_dir, selected_depth=str(selected_depth))
+                self.save_to_file(CTDConfig, var_name,
+                                  'annual_variability',
+                                  CTDConfig.work_dir,
+                                  selected_depth=str(selected_depth))
                 plt.clf()
         else:
             print('Empty dates', CTDConfig)
 
 
-    def createContourPlots(self, CTDConfig, work_dir):
+    def createContourPlots(self, CTDConfig):
         xticklabels = []
         yticklabels = []
         for d, dd in enumerate(self.julianDay):
@@ -434,7 +437,7 @@ class StationPlot:
             self.save_to_file(CTDConfig,
                               varNames[i],
                               'timeseries',
-                              work_dir,
+                              CTDConfig.work_dir,
                               selected_depth='alldepths',
                               dateObjectStart=dateObjectStart,
                               dateObjectEnd=dateObjectEnd)

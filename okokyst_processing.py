@@ -14,6 +14,8 @@ import okokyst_map
 import okokyst_tools
 from station.station_class import Station
 import okokyst_station_mapping as sm
+from pathlib import Path
+
 __author__ = 'Trond Kristiansen'
 __email__ = 'trond.kristiansen@niva.no'
 __created__ = datetime(2017, 2, 24)
@@ -49,8 +51,8 @@ __status__ = "Development"
 # Main function that calls ctd module and reads the individual SAIV data and stores each cast
 # as one station cast object in an array of stations.
 def qualityCheckStation(filename, dateObject, station, CTDConfig):
-   # if CTDConfig.debug:
-      #  print("=> Opening input file: %s" % (filename))
+    # if CTDConfig.debug:
+    #  print("=> Opening input file: %s" % (filename))
 
     cast, metadata = ctd.from_saiv(filename)
     downcast, upcast = cast.split()
@@ -202,6 +204,7 @@ def qualityCheckStation(filename, dateObject, station, CTDConfig):
                         date2num(dateObject, CTDConfig.refdate, calendar="standard"))
         return df
 
+
 # Add data from Aquamonitor (netcdf) files to be able to plot longer time series.
 def addHistoricalData(station, CTDConfig, work_dir):
     if station.name in ['VT69']:
@@ -233,10 +236,10 @@ def addHistoricalData(station, CTDConfig, work_dir):
             oxsat.append(row['O2sat'])
             oxygen.append(row['O2vol'])
             depth.append(float(date_depth_index[1]))
-            ftu.append(row['O2vol']*np.nan)
+            ftu.append(row['O2vol'] * np.nan)
         else:
             print("Storing data for time {}".format(date_depth_index[0]))
-            depth=pd.Series(depth)
+            depth = pd.Series(depth)
             temperature = pd.Series(temperature, index=depth)
             salinity = pd.Series(salinity, index=depth)
             oxygen = pd.Series(oxygen, index=depth)
@@ -270,39 +273,59 @@ def addHistoricalData(station, CTDConfig, work_dir):
             oxsat.append(row['O2sat'])
             oxygen.append(row['O2vol'])
             depth.append(float(date_depth_index[1]))
-            ftu.append(row['O2vol']*np.nan)
+            ftu.append(row['O2vol'] * np.nan)
+
 
 def createContours(stationsList, CTDConfig):
     for station in stationsList:
         station.createTimeSection(CTDConfig)
-        station.createContourPlots(CTDConfig, work_dir)
+        station.createContourPlots(CTDConfig)
 
-def createHistoricalTimeseries(stationsList, CTDConfig, work_dir):
+
+def createHistoricalTimeseries(stationsList, CTDConfig):
     for station in stationsList:
-        if station.name in ["VT69","VT70"]:
+        if station.name in ["VT69", "VT70"]:
             station.createTimeSection(CTDConfig)
-            station.createHistoricalTimeseries(CTDConfig, work_dir)
+            station.createHistoricalTimeseries(CTDConfig)
+
 
 def createTimeseries(stationsList, CTDConfig):
     for station in stationsList:
         station.createTimeSection(CTDConfig)
-        station.createTimeseriesPlot(CTDConfig,work_dir)
+        station.createTimeseriesPlot(CTDConfig, work_dir)
 
 
 ctd_config = {
-            'MON': {
-                  'useDowncast': False},
-            "Hardangerfjorden": {
-                'useDowncast': True},
-            "Sognefjorden": {
-                'useDowncast': True},
-            "Soerfjorden": {
-                'useDowncast': True}
+    'MON': {
+        'useDowncast': False},
+    "Hardangerfjorden": {
+        'useDowncast': True},
+    "Sognefjorden": {
+        'useDowncast': True},
+    "Soerfjorden": {
+        'useDowncast': True},
+    "RMS": {
+        'useDowncast': True},
+    "Aqua_kompetanse": {
+        'useDowncast': True}
 }
 
 
 def main(surveys, months, CTDConfig):
     for survey in surveys:
+
+        if survey in ["Aqua_kompetanse", "RMS"]:
+            domain = "Norskehavet_Sor"
+        elif survey in ["Hardangerfjorden", "Sognefjorden"]:
+            domain = "Nordsjoen_Nord"
+
+        # Root folder on One Drive for Økokyst data
+        CTDConfig.work_dir = r"/Users/trondkr/OneDrive - NIVA/Okokyst_CTD/{}/".format(domain)
+
+        # All folders containing station files (e.g. VT8.txt) needs to contain this prefix
+        prefix = " CTD data"
+        if survey in ["Soerfjorden"]:
+            prefix = "-CTD-data"
 
         CTDConfig.survey = survey
         CTDConfig.useDowncast = ctd_config[survey]['useDowncast']
@@ -332,25 +355,20 @@ def main(surveys, months, CTDConfig):
             projectname = 'Soerfjorden'
 
         if CTDConfig.survey == "Hardangerfjorden":
-
-            basepath = os.path.join(work_dir, 'Hardangerfjorden/')
+            basepath = os.path.join(CTDConfig.work_dir, 'Hardangerfjorden/')
 
             projectid = '10526'
             method = 'Saiv CTD s/n 1270'
             projectname = 'OKOKYST Nordsjoen Nord'
             subStations_before_2020 = ["VT70", "VT69", "VT74", "VT53", "VT52", "VT75"]
-            subStations = ["VT70", "VT74", "VT53","VT8","VR48","VR49"]
-            stationid = ["68910", "68913", "68911","missing_add_me", "missing_add_me","missing_add_me"]
+            subStations = ["VT70", "VT74", "VT53", "VT8", "VR48", "VR49"]
+            stationid = ["68910", "68913", "68911", "missing_add_me", "missing_add_me", "missing_add_me"]
 
-            subStations = ["VR48"]
-            stationid = ["missing_add_me"]
-
-      #      subStations = ["VR49"]
-      #      stationid = ["missing_add_me"]
-
+        #  subStations = ["VR48"]
+        #  stationid = ["missing_add_me"]
 
         if CTDConfig.survey == "Sognefjorden":
-            basepath = os.path.join(work_dir, 'Sognefjorden')
+            basepath = os.path.join(CTDConfig.work_dir, 'Sognefjorden')
 
             projectid = '10526'
             method = 'Saiv CTD s/n 1330'
@@ -358,48 +376,63 @@ def main(surveys, months, CTDConfig):
             subStations = ["VT16", "VT79"]
             stationid = ["68915", "68914"]
 
-        subdirectories = sorted(os.listdir(basepath))
+        if CTDConfig.survey == "RMS":
+            basepath = os.path.join(CTDConfig.work_dir, 'RMS')
 
-        pbar = progressbar.ProgressBar(maxval=len(subdirectories)).start() #, redirect_stdout=True
+            projectid = 'missing_project_id_add_me'
+            method = 'Saiv CTD s/n 1330'
+            projectname = 'OKOKYST Norskehavet Soer'
+            subStations = ["VT71", "VR51"]
+            stationid = ["missing_add_me", "missing_add_me"]
+
+        if CTDConfig.survey == "Aqua_kompetanse":
+            basepath = os.path.join(CTDConfig.work_dir, 'Aqua_kompetanse')
+
+            projectid = 'missing_project_id_add_me'
+            method = 'Saiv CTD s/n 1330'
+            projectname = 'OKOKYST Norskehavet Soer'
+            subStations = ["VR52", "VR61", "VR31"]
+            stationid = ["missing_add_me", "missing_add_me",  "missing_add_me"]
+
+        path, dirs, files = next(os.walk(basepath))
+        pbar = progressbar.ProgressBar(maxval=len(files)).start()
 
         for sub_index, subStation in enumerate(subStations):
             station = Station(subStation, CTDConfig.survey, CTDConfig.survey)
             stationsList.append(station)
             station.stationid = stationid[sub_index]
-
+            counter = 0
             if CTDConfig.createHistoricalTimeseries:
-                if station.name in ["VT69","VT70"]:
-                    addHistoricalData(station, CTDConfig, work_dir)
+                if station.name in ["VT69", "VT70"]:
+                    addHistoricalData(station, CTDConfig, CTDConfig.work_dir)
 
             print("\nSurvey: {} => Adding station {}".format(survey, subStation))
-            for i, folder in enumerate(subdirectories):
-                pbar.update(i + 1)
-                if okokyst_tools.locateDir(os.path.join(basepath, folder)):
-                    if survey in ["Soerfjorden"]:
-                        dirLevel2 = os.path.join(basepath, folder, folder + "-CTD-data")
-                    else:
-                        dirLevel2 = os.path.join(basepath, folder, folder + " CTD data")
+            for folder, subdirs, files in os.walk(basepath):
+                pbar.update(counter + 1)
+                if okokyst_tools.locateDir(folder):
 
-                    if okokyst_tools.locateDir(dirLevel2):
-
-                        dateObject = datetime.strptime(folder, '%Y-%m-%d')
+                    # Check if the folder contains station data based on prefix
+                    if prefix in folder:
+                        # Get the date from the folder name
+                        dateObject = datetime.strptime(Path(folder).stem.replace(prefix, ""), '%Y-%m-%d')
                         strmonth = str(dateObject.strftime("%b"))
 
                         if strmonth in months:
-                            filename = okokyst_tools.locateFile(dirLevel2, subStation)
+                            filename = okokyst_tools.locateFile(folder, subStation)
 
-                            if filename != None:
+                            if filename is not None:
                                 if CTDConfig.debug:
                                     print("=> Identified correct file: {} for month {}".format(filename, strmonth))
 
                                 bb = os.path.basename(filename)
                                 filestation = os.path.splitext(bb)
 
-                                st = filestation[0].replace("_edited","")
+                                st = filestation[0].replace("_edited", "")
 
                                 if st in subStations:
-                                    #newfilename = okokyst_tools.createNewFile(filename, station, CTDConfig)
+                                    # newfilename = okokyst_tools.createNewFile(filename, station, CTDConfig)
                                     qualityCheckStation(filename, dateObject, station, CTDConfig)
+
         pbar.finish()
         if CTDConfig.createHistoricalTimeseries:
             createHistoricalTimeseries(stationsList, CTDConfig, work_dir)
@@ -432,14 +465,12 @@ def main(surveys, months, CTDConfig):
 
 
 if __name__ == "__main__":
-
-    #work_dir = "/Users/trondkr/Dropbox/"
-    work_dir = r"/Users/trondkr/OneDrive - NIVA/Okokyst_CTD/Nordsjoen_Nord/"
     # EDIT
-    #surveys = ["Sognefjorden"]
-    #"Hardangerfjorden","MON"
-    surveys = ["Hardangerfjorden", "Sognefjorden"]
-    surveys = ["Sognefjorden"]
+
+    # surveys = ["Sognefjorden"]
+    # "Hardangerfjorden","MON"
+    surveys = ["Hardangerfjorden", "Sognefjorden", "MON", "Aqua_kompetanse", "RMS"]
+    surveys = ["Aqua_kompetanse"]
 
     months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
 
@@ -452,7 +483,7 @@ if __name__ == "__main__":
     # ØKOKYST should use downcast
 
     CTDConfig = CTDConfig.CTDConfig(createStationPlot=False,
-                                    createTSPlot=True,
+                                    createTSPlot=False,
                                     createContourPlot=True,
                                     createTimeseriesPlot=False,
                                     binDataWriteToNetCDF=False,
