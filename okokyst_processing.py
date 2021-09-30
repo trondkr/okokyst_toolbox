@@ -408,6 +408,7 @@ def main(surveys, months, CTDConfig):
 
             print("\nSurvey: {} => Adding station {}".format(survey, subStation))
             for folder, subdirs, files in os.walk(basepath):
+                subdirs.sort()
                 pbar.update(counter + 1)
                 if okokyst_tools.locateDir(folder):
 
@@ -470,7 +471,7 @@ if __name__ == "__main__":
     # surveys = ["Sognefjorden"]
     # "Hardangerfjorden","MON"
     surveys = ["Hardangerfjorden", "Sognefjorden", "MON", "Aqua_kompetanse", "RMS"]
-    surveys = ["Aqua_kompetanse"]
+    surveys = ["RMS"]
 
     months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
 
