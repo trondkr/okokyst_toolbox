@@ -40,6 +40,7 @@ def modify_df(df,onedrive,filename):
 
     df = to_rename_columns(df, 'Opmg/l', 'OxMgL')
     df = to_rename_columns(df, 'Opml/l', 'OxMlL')
+    df = to_rename_columns(df, 'ml/l', 'OxMlL')
 
     # recalculate Oxygen into Ml/l
 
@@ -146,7 +147,7 @@ class processStation(object):
 
         regions = {'Leon': 'Sognefjorden', 'Kvitsoy': 'Hardangerfjorden',
                    'Hardangerfjorden': 'Hardangerfjorden', 'Sognefjorden': 'Sognefjorden', 'RMS': 'RMS',
-                   'Aquakompetens': 'Aqua kompetanse'}
+                   'Aqua_kompetanse': 'Aqua kompetanse'}
 
         for r in regions:
             name_to_check = re.compile(r, re.IGNORECASE)
@@ -390,7 +391,7 @@ if __name__ == "__main__":
 
     user = 'TEG'
     main_path_RMS = fr"C:\Users\{user}\OneDrive - NIVA\Okokyst_CTD\Norskehavet_Sor\RMS"
-    main_path_aqua = fr"C:\Users\{user}\OneDrive - NIVA\Okokyst_CTD\Norskehavet_Sor\Aquakompetens"
+    main_path_aqua = fr"C:\Users\{user}\OneDrive - NIVA\Okokyst_CTD\Norskehavet_Sor\Aqua_kompetanse"
     #foldernames = [f for f in os.listdir(main_path) if re.match(r'2021', f)]
 
     #RMS
@@ -401,7 +402,7 @@ if __name__ == "__main__":
     #call_process('08-2021')
 
     #Aqua kompetanse
-    call_process(main_path_aqua,'2021-03')
+    call_process(main_path_aqua,'2021-05')
 
 
     # Sognefjorden 2021
