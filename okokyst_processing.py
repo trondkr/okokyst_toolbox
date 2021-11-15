@@ -19,7 +19,7 @@ from pathlib import Path
 __author__ = 'Trond Kristiansen'
 __email__ = 'trond.kristiansen@niva.no'
 __created__ = datetime(2017, 2, 24)
-__modified__ = datetime(2021, 9, 27)
+__modified__ = datetime(2021, 11, 15)
 __version__ = "1.0"
 __status__ = "Development"
 
@@ -364,6 +364,9 @@ def main(surveys, months, CTDConfig):
             subStations = ["VT70", "VT74", "VT53", "VT8", "VR48", "VR49"]
             stationid = ["68910", "68913", "68911", "missing_add_me", "missing_add_me", "missing_add_me"]
 
+            subStations = ["VR48"]
+            stationid = ["missing_add_me"]
+
         #  subStations = ["VR48"]
         #  stationid = ["missing_add_me"]
 
@@ -382,7 +385,7 @@ def main(surveys, months, CTDConfig):
             projectid = 'missing_project_id_add_me'
             method = 'Saiv CTD s/n 1330'
             projectname = 'OKOKYST Norskehavet Soer'
-            subStations = ["VT71", "VR51"]
+            subStations = ["VT71"] #, "VR51"]
             stationid = ["missing_add_me", "missing_add_me"]
 
         if CTDConfig.survey == "Aqua_kompetanse":
@@ -415,7 +418,14 @@ def main(surveys, months, CTDConfig):
                     # Check if the folder contains station data based on prefix
                     if prefix in folder:
                         # Get the date from the folder name
-                        dateObject = datetime.strptime(Path(folder).stem.replace(prefix, ""), '%Y-%m-%d')
+                        date_formats = ['%Y/%m/%d', '%Y-%m-%d', '%Y%m%d','%d.%m.%Y', '%m/%d/%Y', '%m-%d-%Y']
+                        for date_format in date_formats:
+                            try:
+                                dateObject = datetime.strptime(Path(folder).stem.replace(prefix, ""), date_format)
+                                break
+                            except ValueError as e:
+                                pass
+
                         strmonth = str(dateObject.strftime("%b"))
 
                         if strmonth in months:
@@ -471,7 +481,7 @@ if __name__ == "__main__":
     # surveys = ["Sognefjorden"]
     # "Hardangerfjorden","MON"
     surveys = ["Hardangerfjorden", "Sognefjorden", "MON", "Aqua_kompetanse", "RMS"]
-    surveys = ["RMS"]
+    surveys = ["RMS","Aqua_kompetanse","Sognefjorden"]
 
     months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
 
