@@ -114,7 +114,7 @@ serveys_lookup_table = {
             "station.latitude": 62.3284,
             "depth": 70},
         "VR51": {
-            "station.header": "STATION;VT75;Korsen;62.0944;7.0061\n",
+            "station.header": "STATION;VR51;Korsen;62.0944;7.0061\n",
             "station.longitude": 7.0061,
             "station.latitude": 62.0944,
             "depth": 250}},
@@ -177,7 +177,23 @@ serveys_lookup_table = {
         "SOE10": {
             "station.header": "STATION;SOE10;SOE10;60.08855;6.543167\n",
             "station.longitude": 6.543167,
-            "station.latitude": 60.08855}}}
+            "station.latitude": 60.08855}},
+    "Lillesand": {
+        "A01": {
+            "station.header": "STATION;A01;Fossbekk;58.2417;8.3810\n",
+            "station.longitude": 8.3810,
+            "station.latitude": 58.2417,
+            "depth": 43.0},
+        "A16": {
+            "station.header": "STATION;A16;Skallefjorden;58.2320;8.3689\n",
+            "station.longitude": 8.3689,
+            "station.latitude": 58.2320,
+            "depth": 71.0},
+        "A17": {
+            "station.header": "STATION;A17;Referanse;58.2345;8.4084\n",
+            "station.longitude": 8.4084,
+            "station.latitude": 58.2345,
+            "depth": 60.0}}}
 
 
 def addStationMeadata(station, CTDConfig, options=None):

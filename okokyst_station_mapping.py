@@ -147,7 +147,7 @@ class processStation(object):
 
         regions = {'Leon': 'Sognefjorden', 'Kvitsoy': 'Hardangerfjorden',
                    'Hardangerfjorden': 'Hardangerfjorden', 'Sognefjorden': 'Sognefjorden', 'RMS': 'RMS',
-                   'Aqua_kompetanse': 'Aqua kompetanse'}
+                   'Aqua_kompetanse': 'Aqua kompetanse', 'Lillesand': 'Lillesand',}
 
         for r in regions:
             name_to_check = re.compile(r, re.IGNORECASE)
@@ -392,18 +392,21 @@ if __name__ == "__main__":
     user = 'TEG'
     main_path_RMS = fr"C:\Users\{user}\OneDrive - NIVA\Okokyst_CTD\Norskehavet_Sor\RMS"
     main_path_aqua = fr"C:\Users\{user}\OneDrive - NIVA\Okokyst_CTD\Norskehavet_Sor\Aqua_kompetanse"
+    main_path_Lillesand=fr"K:\Prosjekter\Sjøvann\O-200300 Lillesand resipient\Hydrografi\Data\CTDData"
     #foldernames = [f for f in os.listdir(main_path) if re.match(r'2021', f)]
 
     #RMS
-    #call_process(main_path_RMS,'06_2021')
+    #call_process(main_path_RMS,'10-2021')
     #call_process('04-2021')
     #call_process('06-2021')
     #call_process('07-2021')
     #call_process('08-2021')
 
     #Aqua kompetanse
-    call_process(main_path_aqua,'2021-05')
+    #call_process(main_path_aqua,'2021-10')
 
+
+    #call_process(main_path_Lillesand, "CTD tekstfiles")
 
     # Sognefjorden 2021
     main_path_sognefjorden = fr"C:\Users\{user}\OneDrive - NIVA\Okokyst_CTD\Nordsjoen_Nord\Sognefjorden"
@@ -411,7 +414,7 @@ if __name__ == "__main__":
     #foldername = "2021-01-25"
 
     # Here the automatic assignment did not work, due to bad weather the CTD did not reach the bottom
-    #call_process(main_path_sognefjorden, "2021-02-17")
+    call_process(main_path_sognefjorden, "2021-10-20")
     #manual_add_metadata_header(r"C:\Users\ELP\OneDrive - NIVA\Okokyst_CTD\Nordsjoen_Nord\Sognefjorden\2021-02-17\2021-02-17 CTD data\Unknown_station2.txt", 'VT16')
 
     #call_process(main_path_sognefjorden, '2021-03-14')
@@ -421,8 +424,8 @@ if __name__ == "__main__":
     #call_process(main_path_sognefjorden, '2021-07-14')
     #call_process(main_path_sognefjorden, '2021-08-18')
 
-    main_path_hardangerfjorden = r'C:\Users\ELP\OneDrive - NIVA\Okokyst_CTD\Nordsjoen_Nord\Hardangerfjorden'
-    #call_process(main_path_hardangerfjorden, "2021-04-20-21")
+    main_path_hardangerfjorden = fr"C:\Users\{user}\OneDrive - NIVA\Okokyst_CTD\Nordsjoen_Nord\Hardangerfjorden"
+    #call_process(main_path_hardangerfjorden, "2021-09-20-21")
 
     #Has to be checked, no oxygen! did not work
     ###call_process(main_path_hardangerfjorden, "2021-05-18-20")
