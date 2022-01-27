@@ -56,14 +56,25 @@ def modify_df(df,onedrive,filename):
         df['OxMgL'] = df.OxMgL.values / 1.42905
         df = to_rename_columns(df,  'OxMgL', 'OxMlL')
 
-    try:
-        df['Date'] = pd.to_datetime(df['Date'], format='%d.%m.%Y').dt.strftime('%d.%m.%Y')
-    except Exception as e:
-        print ('date',e)
-    try:
-        df['Time'] = pd.to_datetime(df['Time'], format='%H:%M:%S').dt.strftime('%H.%M.%S')
-    except Exception as e:
-        print ('time', e)
+    if filename.endswith(".txt"):
+        try:
+            df['Date'] = pd.to_datetime(df['Date'], format='%d.%m.%Y').dt.strftime('%d.%m.%Y')
+        except Exception as e:
+            print ('date',e)
+        try:
+            df['Time'] = pd.to_datetime(df['Time'], format='%H:%M:%S').dt.strftime('%H.%M.%S')
+        except Exception as e:
+            print ('time', e)
+
+    if filename.endswith(".xlsx"):
+        try:
+            df['Date'] = pd.to_datetime(df['Date'], format='%Y-%m-%d').dt.strftime('%d.%m.%Y')
+        except Exception as e:
+            print ('date',e)
+        try:
+            df['Time'] = pd.to_datetime(df['Time'], format='%H:%M:%S').dt.strftime('%H.%M.%S')
+        except Exception as e:
+            print ('time', e)
 
     try:
         df = df.astype({'OxMlL': float})
@@ -112,8 +123,11 @@ class processStation(object):
 
         self.stations_list = list(serveys_lookup_table[self.servey].keys())
         self.stations_depths = np.array([serveys_lookup_table[self.servey][st]['depth'] for st in self.stations_list])
+        if name.endswith(".txt"):
+            self.df_all = self.read_convert_df()
+        if name.endswith(".xlsx"):
+            self.df_all = self.read_convert_excel()
 
-        self.df_all = self.read_convert_df()
         try:
             self.calc_depth()
         except Exception as e:
@@ -121,11 +135,11 @@ class processStation(object):
 
         try:
             self.df_all = modify_df(self.df_all, self.onedrive,name)
-
             grouped = self.df_all.groupby('Ser')
 
             for name, group_df in grouped:
                 self.match_stations_by_depth(group_df)
+
 
         except Exception as e:
             print('Error in reading the dataframe',e)
@@ -135,7 +149,6 @@ class processStation(object):
         print ('calc depth')
         latitude = serveys_lookup_table[self.servey][first_st]["station.latitude"]
         depths = []
-
         for p in self.df_all['Press'].values:
             d = pressure_to_depth(float(p), latitude)
             depths.append(d)
@@ -155,6 +168,23 @@ class processStation(object):
             if find_match:
                 return regions[r]
 
+    def read_convert_excel(self):
+        print ('\n****** Reading', self.input_path)
+        # read the concerto file
+        df_all=pd.read_excel(self.input_path, sheet_name="Data", skiprows=1, names=["DateTime", "Conductivity", "Temp",
+        "Press", "Inst_Temp", "OxMgL", "FTU", "SW_press", "Depth", "Salinity", "Soundspeed", "Spec_cond", "OptOx",
+        "Density"  ], engine="openpyxl")
+        df_all["OxMgL"]=df_all["OxMgL"]*31.9988
+        df_all["Ser"]=1
+        df_all["Meas"]=pd.RangeIndex(stop=df_all.shape[0]) +1
+        df_all['Date'] = pd.to_datetime(df_all['DateTime']).dt.date
+        df_all['Time'] = pd.to_datetime(df_all['DateTime']).dt.time
+
+        print('short', df_all.columns)
+        return df_all
+
+
+
     def read_convert_df(self):
         print ('\n****** Reading', self.input_path)
         # read the document and skip undefined number of unneeded rows
@@ -167,7 +197,7 @@ class processStation(object):
                                      sep=';', decimal=',', encoding=encoding)
 
                 #print (df_all.head())
-                if len(df_all.columns) < 10:
+                if len(df_all.columns) < 20:
                     print('short', df_all.columns)
                     try:
                         df_all = pd.read_csv(self.input_path, skiprows=n, header=n,
@@ -213,7 +243,6 @@ class processStation(object):
         # Get number of the cast
         Ser = group['Ser'].values[0]
         print('Cast', Ser)
-
         self.servey_date = group.Date.values[0]
 
         max_depth = np.max(group['Depth'].max())
@@ -225,7 +254,6 @@ class processStation(object):
         #print (difs_pos,'filtered difs')
         #sqr_difs = np.sqrt(difs**2)
         min_dif = np.min(difs_pos)
-
         print('max depth', max_depth,'min difference', min_dif, 'Time', group.Time.values[0])
 
         self.make_new_base_path()
@@ -388,6 +416,11 @@ if __name__ == "__main__":
             if 'OBS' not in f:
                 processStation(f,onedrive)
 
+        files = glob.glob(path + '\*xlsx')
+        for f in files:
+            x1=pd.ExcelFile(f)
+            if "Data" in x1.sheet_names:
+                processStation(f,onedrive)
 
     user = 'TEG'
     main_path_RMS = fr"C:\Users\{user}\OneDrive - NIVA\Okokyst_CTD\Norskehavet_Sor\RMS"
@@ -396,14 +429,14 @@ if __name__ == "__main__":
     #foldernames = [f for f in os.listdir(main_path) if re.match(r'2021', f)]
 
     #RMS
-    #call_process(main_path_RMS,'10-2021')
+    call_process(main_path_RMS,'12-2021')
     #call_process('04-2021')
     #call_process('06-2021')
     #call_process('07-2021')
     #call_process('08-2021')
 
     #Aqua kompetanse
-    #call_process(main_path_aqua,'2021-10')
+    #call_process(main_path_aqua,'2021-12')
 
 
     #call_process(main_path_Lillesand, "CTD tekstfiles")
@@ -414,7 +447,7 @@ if __name__ == "__main__":
     #foldername = "2021-01-25"
 
     # Here the automatic assignment did not work, due to bad weather the CTD did not reach the bottom
-    call_process(main_path_sognefjorden, "2021-10-20")
+    #call_process(main_path_sognefjorden, "2022-01-17&18")
     #manual_add_metadata_header(r"C:\Users\ELP\OneDrive - NIVA\Okokyst_CTD\Nordsjoen_Nord\Sognefjorden\2021-02-17\2021-02-17 CTD data\Unknown_station2.txt", 'VT16')
 
     #call_process(main_path_sognefjorden, '2021-03-14')
@@ -424,8 +457,8 @@ if __name__ == "__main__":
     #call_process(main_path_sognefjorden, '2021-07-14')
     #call_process(main_path_sognefjorden, '2021-08-18')
 
-    main_path_hardangerfjorden = fr"C:\Users\{user}\OneDrive - NIVA\Okokyst_CTD\Nordsjoen_Nord\Hardangerfjorden"
-    #call_process(main_path_hardangerfjorden, "2021-09-20-21")
+    #main_path_hardangerfjorden = fr"C:\Users\{user}\OneDrive - NIVA\Okokyst_CTD\Nordsjoen_Nord\Hardangerfjorden"
+    #call_process(main_path_hardangerfjorden, "2021-12")
 
     #Has to be checked, no oxygen! did not work
     ###call_process(main_path_hardangerfjorden, "2021-05-18-20")
