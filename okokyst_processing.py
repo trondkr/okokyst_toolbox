@@ -292,7 +292,7 @@ def createHistoricalTimeseries(stationsList, CTDConfig):
 def createTimeseries(stationsList, CTDConfig):
     for station in stationsList:
         station.createTimeSection(CTDConfig)
-        station.createTimeseriesPlot(CTDConfig, work_dir)
+        station.createTimeseriesPlot(CTDConfig)
 
 
 ctd_config = {
@@ -446,7 +446,7 @@ def main(surveys, months, CTDConfig):
 
         pbar.finish()
         if CTDConfig.createHistoricalTimeseries:
-            createHistoricalTimeseries(stationsList, CTDConfig, work_dir)
+            createHistoricalTimeseries(stationsList, CTDConfig)
 
         for st in stationsList:
             if CTDConfig.describeStation:
@@ -482,6 +482,7 @@ if __name__ == "__main__":
     # "Hardangerfjorden","MON"
     surveys = ["Hardangerfjorden", "Sognefjorden", "MON", "Aqua_kompetanse", "RMS"]
     surveys = ["RMS","Aqua_kompetanse","Sognefjorden"]
+    surveys=["Hardangerfjorden", ]
 
     months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
 
@@ -509,7 +510,7 @@ if __name__ == "__main__":
                                     oxsatName='OptOx',
                                     refdate="seconds since 1970-01-01:00:00:00",
                                     selected_depths=selected_depths,
-                                    write_to_excel=False,
+                                    write_to_excel=True,
                                     conductivity_to_salinity=False,
                                     debug=True)
 

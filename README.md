@@ -5,9 +5,39 @@ Toolbox for processing, plotting, and calculating stats of SAIV CTD cast data fr
 
  To make use of this toolbox you also need to install python-ctd package. 
  In the source code for python-ctd localte the folder ctd/read.py and replace the content with the content 
- of file functionSAIV.py. Then recompile and install the python-ctd module using:
+ of file functionSAIV.py. Next, add the new function to the `__init__.py` file
+ within the `ctd` directory so that it looks like this:
+ 
+```
+from .read import from_bl, from_btl, from_cnv, from_edf, from_saiv, from_fsi, rosette_summary
+
+ __all__ = [
+    "bindata",
+    "despike",
+    "from_bl",
+    "from_btl",
+    "from_cnv",
+    "from_edf",
+    "from_fsi",
+    "from_saiv",
+    "lp_filter",
+    "movingaverage",
+    "plot_cast",
+    "press_check",
+    "remove_above_water",
+    "rosette_summary",
+    "smooth",
+    "split",
+]
+```
+ 
+Then recompile and install the python-ctd module using:
  `cd python-ctd
- python setup.py develop
+  pip install gsw
+  pip install openpyxl
+  pip install cmocean
+  pip install xlsxwriter
+  python setup.py develop
  `
 
  This adds the possibility to read SAIV files

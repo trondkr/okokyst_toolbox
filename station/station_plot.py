@@ -143,7 +143,7 @@ class StationPlot:
                 depthindex = np.where(Y == 100)[0][0]
         return depthindex
 
-    def createHistoricalTimeseries(self, CTDConfig,work_dir):
+    def createHistoricalTimeseries(self, CTDConfig):
         dates = [num2date(jd, units=CTDConfig.refdate, calendar="standard") for jd in self.julianDay]
 
         # Either we plot all the years or a selection (e.g. years=[2017,2018])
@@ -250,10 +250,10 @@ class StationPlot:
 
                     plt.tight_layout()
                     if not smooth:
-                        self.save_to_file(CTDConfig, var_name, 'annual_variability_historical',work_dir,
+                        self.save_to_file(CTDConfig, var_name, 'annual_variability_historical',CTDConfig.work_dir,
                                           selected_depth=str(selected_depth))
                     else:
-                        self.save_to_file(CTDConfig, var_name, 'annual_variability_historical_smoothed',work_dir,
+                        self.save_to_file(CTDConfig, var_name, 'annual_variability_historical_smoothed',CTDConfig.work_dir,
                                           selected_depth=str(selected_depth))
                     plt.clf()
 

@@ -10,7 +10,8 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
-from netCDF4 import date2num,num2date
+from netCDF4 import date2num, num2date
+
 
 def _basename(fname):
     """Return file name without path."""
@@ -217,12 +218,12 @@ def from_btl(fname):
     rowtypes = df[df.columns[-1]].unique()
     # Get times and dates which occur on second line of each bottle.
     dates = df.iloc[:: len(rowtypes), 1].reset_index(drop=True)
-    times = df.iloc[1 :: len(rowtypes), 1].reset_index(drop=True)
+    times = df.iloc[1:: len(rowtypes), 1].reset_index(drop=True)
     datetimes = dates + " " + times
 
     # Fill the Date column with datetimes.
     df.loc[:: len(rowtypes), "Date"] = datetimes.values
-    df.loc[1 :: len(rowtypes), "Date"] = datetimes.values
+    df.loc[1:: len(rowtypes), "Date"] = datetimes.values
 
     # Fill missing rows.
     df["Bottle"] = df["Bottle"].fillna(method="ffill")
@@ -255,37 +256,44 @@ def from_btl(fname):
     setattr(df, "_metadata", metadata)
     return df
 
+
 def _parse_saiv(lines, sep=";", ftype="saiv"):
     metadata = {}
     header, config, names = [], [], []
-    counter=0
-    separator=';'
-    
+    counter = 0
+    separator = ';'
+
     for k, line in enumerate(lines):
         line = line.strip()
-       
-        if counter==0:
-           
+
+        if counter == 0:
             lat = line.split(separator)[3].strip()
             lon = line.split(separator)[4].strip()
-            station=line.split(separator)[1]
-            serial=line.split(separator)[0]
-    
-        if counter==1:
+            station = line.split(separator)[1]
+            serial = line.split(separator)[0]
+
+        if counter == 1:
             header.append(line)
             col = line.split(separator)
-            names=col
-        
-        if counter==2:
+            names = col
+            for i,name in enumerate(names):
+                if name=="Time":
+                    time_index=i
+                if name=="Date":
+                    date_index=i
+            if time_index is None and date_index is None:
+                print("ERROR - unable to find time and date columns in header")
+                break
+        if counter == 2:
             l = line.split(separator)
-            time=l[9]+' '+l[10]
+            time = l[date_index] + ' ' + l[time_index]
             datetime.strptime(time, "%d.%m.%Y %H.%M.%S")
             skiprows = counter
-            
-        if counter>2:
+
+        if counter > 2:
             break
-        counter+=1
-    config="SAIV"
+        counter += 1
+    config = "SAIV"
     metadata.update(
         {
             "header": "\n".join(header),
@@ -297,19 +305,20 @@ def _parse_saiv(lines, sep=";", ftype="saiv"):
             "lat": lat,
         })
     return metadata
-     
+
+
 def calculate_julianday(d):
-     
     # Calculate the julian date from the current datetime format (Norwegian time and date format)
-    return date2num(d,units="days since 1948-01-01 00:00:00",calendar="standard")
-   
+    return date2num(d, units="days since 1948-01-01 00:00:00", calendar="standard")
+
+
 def from_saiv(fname):
     """
     DataFrame constructor to open SAIV ASCII format. This file is modified by adding the
     header containing longitude and latitude. E.g.
-    
+
     STATION;VT52;Kvinnherad;60.0096;5.954
-    Ser;Meas;Sal.;Temp;T (FTU);Opt;Density;Depth(u);Date;Time;;   
+    Ser;Meas;Sal.;Temp;T (FTU);Opt;Density;Depth(u);Date;Time;;
 
     Examples
     --------
@@ -319,39 +328,42 @@ def from_saiv(fname):
     >>> _ = ax.axis([20, 24, 19, 0])
     >>> ax.grid(True)
     """
-    separator=';'
+    separator = ';'
     f = _read_file(fname)
     metadata = _parse_saiv(f.readlines(), sep=separator, ftype="saiv")
- 
+
     f.seek(0)
-    skiprows=2
+    skiprows = 2
 
     df = pd.read_table(f, header=None, index_col=False, names=metadata["names"],
-        skiprows=metadata["skiprows"], sep=separator)
-    
+                       skiprows=metadata["skiprows"], sep=separator)
+
     f.close()
 
     # Get row types, see what you have: avg, std, min, max or just avg, std.
     rowtypes = df[df.columns[-1]].unique()
     # Get times and dates which occur on second line of each bottle.
-  #  dates = df.iloc[:: len(rowtypes), 1].reset_index(drop=True)
-  #  times = df.iloc[1 :: len(rowtypes), 1].reset_index(drop=True)
+    #  dates = df.iloc[:: len(rowtypes), 1].reset_index(drop=True)
+    #  times = df.iloc[1 :: len(rowtypes), 1].reset_index(drop=True)
     datetimes = df["Date"] + " " + df["Time"]
-    
-    df["Date"]=pd.to_datetime(datetimes, format="%d.%m.%Y %H.%M.%S")
-    df['Depth2']=df['Depth']
-   
+
+    df["Date"] = pd.to_datetime(datetimes, format="%d.%m.%Y %H.%M.%S")
+    df['Depth2'] = df['Depth']
+
     # Fill the Date column with datetimes.
     df.set_index("Depth", drop=True, inplace=True)
     df.index.name = "Depth [m]"
     name = _basename(fname)[1]
-    
+
     setattr(df, "_metadata", metadata)
 
-    df['JD']=df.apply(lambda row: calculate_julianday(row['Date']), axis=1)
-    df['dz/dtM']=abs(df['Depth2'].astype('float64') - df.shift()['Depth2'].astype('float64'))/(abs(df['JD'].astype('float64')-df.shift()['JD'].astype('float64'))*3600*24.)   #cast.apply(lambda row: calculate_sinking_velocity(row,cast), axis=1)
-    
-    return df
+    df['JD'] = df.apply(lambda row: calculate_julianday(row['Date']), axis=1)
+    df['dz/dtM'] = abs(df['Depth2'].astype('float64') - df.shift()['Depth2'].astype('float64')) / (abs(
+        df['JD'].astype('float64') - df.shift()['JD'].astype(
+            'float64')) * 3600 * 24.)  # cast.apply(lambda row: calculate_sinking_velocity(row,cast), axis=1)
+
+    return df, metadata
+
 
 def from_edf(fname):
     """

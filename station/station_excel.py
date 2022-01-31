@@ -26,18 +26,19 @@ class StationExcel:
         if os.path.exists(filename): 
             os.remove(filename)
         options = {'strings_to_formulas': False, 'strings_to_urls': False}
-        writer = pd.ExcelWriter(filename, engine='openpyxl', options=options)
+        writer = pd.ExcelWriter(filename, engine='openpyxl')
 
         return writer
 
     def get_excel_filename(self,CTDConfig):
-        if not os.path.exists('xlsfiles/{}'.format(CTDConfig.survey)):
-            Path('xlsfiles/{}'.format(CTDConfig.survey)).mkdir(parents=True, exist_ok=True)
+        if not os.path.exists('{}xlsfiles/{}'.format(CTDConfig.work_dir, CTDConfig.survey)):
+            Path('{}xlsfiles/{}'.format(CTDConfig.work_dir, CTDConfig.survey)).mkdir(parents=True, exist_ok=True)
 
-        return "xlsfiles/{}/{}_CTD.xlsx".format(CTDConfig.survey, self.name)
+        return "{}xlsfiles/{}/{}_CTD.xlsx".format(CTDConfig.work_dir, CTDConfig.survey, self.name)
                     
     def write_station_to_excel(self, CTDConfig):
         filename = self.get_excel_filename(CTDConfig)
+        print(filename)
         sheet_name = 'Rådata'
         pbar = progressbar.ProgressBar(max_value=len(self.depth), redirect_stdout=True).start()
         
@@ -59,7 +60,7 @@ class StationExcel:
             d_num = dateObject.toordinal()
             date_num = d_num - (excl-2)
 
-            if dateObject.year == 2019 and dateObject.month == 12 or dateObject.year == 2020:
+            if dateObject.year == 2020 and dateObject.month == 12 or dateObject.year == 2021:
                 projname = []; statcode = []; mtd = []; dat = []
                 for i in self.Y:
                     projname.append(self.projectname)
