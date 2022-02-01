@@ -62,8 +62,7 @@ serveys_lookup_table = {
             "depth": 125},
 
         "VR48": {
-
-            "station.header": "STATION;VR48;Hjelmelandsfjorden;59.2435,6.1345\n",
+            "station.header": "STATION;VR48;Hjelmelandsfjorden;59.2435;6.1345\n",
             "station.longitude": 6.1345,
             "station.latitude": 59.2435,
             "depth": 250},
@@ -112,7 +111,7 @@ serveys_lookup_table = {
             "station.header": "STATION;VT71;Skinnbrokleia;62.3284;5.7551\n",
             "station.longitude": 5.7552,
             "station.latitude": 62.3284,
-            "depth": 70},
+            "depth": 87},
         "VR51": {
             "station.header": "STATION;VR51;Korsen;62.0944;7.0061\n",
             "station.longitude": 7.0061,

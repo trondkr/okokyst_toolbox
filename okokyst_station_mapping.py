@@ -175,14 +175,14 @@ class processStation(object):
         "Press", "Inst_Temp", "OxMgL", "FTU", "SW_press", "Depth", "Salinity", "Soundspeed", "Spec_cond", "OptOx",
         "Density"  ], engine="openpyxl")
         df_all["OxMgL"]=df_all["OxMgL"]*31.9988
-        df_all["Ser"]=1
-        df_all["Meas"]=pd.RangeIndex(stop=df_all.shape[0]) +1
-        df_all['Date'] = pd.to_datetime(df_all['DateTime']).dt.date
-        df_all['Time'] = pd.to_datetime(df_all['DateTime']).dt.time
-
-        print('short', df_all.columns)
-        return df_all
-
+        df_all['Datetime'] = pd.to_datetime(df_all['DateTime'])
+        df_resampled = df_all.set_index("Datetime").resample("1s").mean()
+        df_resampled["Ser"]=1
+        df_resampled["Meas"]=pd.RangeIndex(start=1, stop=df_resampled.shape[0]+1)
+        df_resampled['Date'] = [d.date() for d in df_resampled.index]
+        df_resampled['Time'] = [d.time() for d in df_resampled.index]
+        df_resampled.reset_index(drop=True, inplace=True)
+        return df_resampled
 
 
     def read_convert_df(self):
@@ -429,7 +429,7 @@ if __name__ == "__main__":
     #foldernames = [f for f in os.listdir(main_path) if re.match(r'2021', f)]
 
     #RMS
-    call_process(main_path_RMS,'12-2021')
+    #call_process(main_path_RMS,'12-2021')
     #call_process('04-2021')
     #call_process('06-2021')
     #call_process('07-2021')
@@ -457,8 +457,8 @@ if __name__ == "__main__":
     #call_process(main_path_sognefjorden, '2021-07-14')
     #call_process(main_path_sognefjorden, '2021-08-18')
 
-    #main_path_hardangerfjorden = fr"C:\Users\{user}\OneDrive - NIVA\Okokyst_CTD\Nordsjoen_Nord\Hardangerfjorden"
-    #call_process(main_path_hardangerfjorden, "2021-12")
+    main_path_hardangerfjorden = fr"C:\Users\{user}\OneDrive - NIVA\Okokyst_CTD\Nordsjoen_Nord\Hardangerfjorden"
+    call_process(main_path_hardangerfjorden, "2022-01")
 
     #Has to be checked, no oxygen! did not work
     ###call_process(main_path_hardangerfjorden, "2021-05-18-20")
