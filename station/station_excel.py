@@ -5,8 +5,6 @@ from netCDF4 import date2num, num2date
 import progressbar
 import pandas as pd
 import cftime
-import xlsxwriter
-import numpy as np
 
 # Local files
 import ctdConfig as CTDConfig
@@ -18,7 +16,8 @@ __modified__ = datetime.datetime(2021, 5, 7)
 __version__ = "2.0"
 __status__ = "Development" 
 __history__ = "Converted from version by Anna Birgitta Ledang, NIVA; Changed 15.01.2020, " \
-              "New template 07.05.2021 Trond Kristiansen"
+              "New template 07.05.2021 Trond Kristiansen. " \
+              "Fixed problem with xlsxwriter 15.02.2022 Trond Kristiansen."
 
 class StationExcel:
     def open_excel_file(self, filename, sheet_name):
@@ -26,9 +25,7 @@ class StationExcel:
         if os.path.exists(filename): 
             os.remove(filename)
         options = {'strings_to_formulas': False, 'strings_to_urls': False}
-        writer = pd.ExcelWriter(filename, engine='openpyxl')
-
-        return writer
+        return pd.ExcelWriter(filename, engine='xlsxwriter', options=options)
 
     def get_excel_filename(self,CTDConfig):
         if not os.path.exists('{}xlsfiles/{}'.format(CTDConfig.work_dir, CTDConfig.survey)):
@@ -38,18 +35,16 @@ class StationExcel:
                     
     def write_station_to_excel(self, CTDConfig):
         filename = self.get_excel_filename(CTDConfig)
-        print(filename)
         sheet_name = 'Rådata'
         pbar = progressbar.ProgressBar(max_value=len(self.depth), redirect_stdout=True).start()
         
         # Load the data
         self.createTimeSection(CTDConfig)
-        first=True
-        startrow=0
-        header=True
         missing_value=-999
-        
+        dfs=[]
+
         for station_index, de in enumerate(self.depth):
+            print("station",station_index)
             pbar.update(station_index+1)
             d = num2date(self.julianDay[station_index], units=CTDConfig.refdate, calendar="standard")
             excl = datetime.datetime.strptime('1900-01-01','%Y-%M-%d').toordinal()
@@ -70,38 +65,31 @@ class StationExcel:
                 depth1 = self.Y
                 depth2 = self.Y + 1.0
 
-                # No VT52 and VT75 in February 2017
-                if (self.name in ["VT52","VT75"] and int(dateObject.year)==2017 and int(dateObject.month)==2):
-                    print("EMPTY DATA ADDED FOR STATION {}".format(self.name))
-                else:
-                    print("Writing data to file {} {}".format(dateObject,dateObject.strftime("%d-%m-%Y %H:%M:%S")))
-                    df = pd.DataFrame({'PROJECT_NAME': str(self.projectname),
-                                        'STATION_CODE': str(self.stationid),
-                                        'STATION_NAME': str(self.name),
-                                        'DATASOURCE_NAME': 'NIVA',
-                                        'INSTRUMENT_REF': mtd,
-                                        'Date': dateObject.strftime("%d-%m-%Y %H:%M:%S"), #date_num,
-                                        'DEPTH1': depth1,
-                                        'DEPTH2': depth2,
-                                        'REMARK':"",
-                                        'Saltholdighet PSU': self.sectionSA[station_index,:],
-                                        'Temperatur C': self.sectionTE[station_index,:],
-                                        'Oksygen ml O2/L': self.sectionOX[station_index,:],
-                                        'Oksygenmetning %': self.sectionOXS[station_index,:]})
+                print("Writing data to file {} {}".format(dateObject,dateObject.strftime("%d-%m-%Y %H:%M:%S")))
+                df = pd.DataFrame({'PROJECT_NAME': str(self.projectname),
+                                    'STATION_CODE': str(self.stationid),
+                                    'STATION_NAME': str(self.name),
+                                    'DATASOURCE_NAME': 'NIVA',
+                                    'INSTRUMENT_REF': mtd,
+                                    'Date': dateObject.strftime("%d-%m-%Y %H:%M:%S"), #date_num,
+                                    'DEPTH1': depth1,
+                                    'DEPTH2': depth2,
+                                    'REMARK':"",
+                                    'Saltholdighet PSU': self.sectionSA[station_index,:],
+                                    'Temperatur C': self.sectionTE[station_index,:],
+                                    'Turbiditet FTU': self.sectionFTU[station_index, :],
+                                    'Oksygen ml O2/L': self.sectionOX[station_index,:],
+                                    'Oksygenmetning %': self.sectionOXS[station_index,:]})
 
-                    # Replace nans with missing value
-                    df=df.fillna(missing_value)
+                # Replace nans with missing value and add to list of station Dataframes
+                dfs.append(df.fillna(missing_value))
+            if dfs:
+                # Concatenate all dataframes to one as xlxswriter only writes once to file
+                df_final = pd.concat(dfs)
 
-                    if first:
-                        print("Writing data to file {}".format(filename))
-                        writer = self.open_excel_file(filename,sheet_name)
-                        first = False
+                # write out the data to file, now using the writer created using xlsxwriter engine
+                writer = self.open_excel_file(filename, sheet_name)
+                df_final.to_excel(writer, sheet_name)
 
-                    # write out the data to file
-
-                    df.to_excel(writer, sheet_name, startrow=startrow, header=header)
-                    startrow = writer.book[sheet_name].max_row
-                    header=False
-
-                    # save the workbook
+                # save the workbook
                 writer.save()

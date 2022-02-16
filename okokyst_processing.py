@@ -318,6 +318,8 @@ def main(surveys, months, CTDConfig):
             domain = "Norskehavet_Sor"
         elif survey in ["Hardangerfjorden", "Sognefjorden"]:
             domain = "Nordsjoen_Nord"
+        elif survey in ["Soerfjorden"]:
+            domain = "Soerfjorden"
 
         # Root folder on One Drive for Økokyst data
         CTDConfig.work_dir = r"/Users/trondkr/OneDrive - NIVA/Okokyst_CTD/{}/".format(domain)
@@ -346,7 +348,7 @@ def main(surveys, months, CTDConfig):
             projectname = 'Marin overvåking Nordland'
 
         if CTDConfig.survey == "Soerfjorden":
-            basepath = "/Users/trondkr/Dropbox/Sorfjorden_2017_2019/"
+            basepath = "/Users/trondkr/OneDrive - NIVA/Okokyst_CTD/{}/".format(domain)
             subStations = ["SOE72", "Lind1", "S22", "S16", "SOE10"]
             subStations = ["SOE72", "Lind1", "S22"]
             stationid = ["SOE72", "Lind1", "S22", "S16", "SOE10"]
@@ -364,8 +366,8 @@ def main(surveys, months, CTDConfig):
             subStations = ["VT70", "VT74", "VT53", "VT8", "VR48", "VR49"]
             stationid = ["68910", "68913", "68911", "missing_add_me", "missing_add_me", "missing_add_me"]
 
-            subStations = ["VR48"]
-            stationid = ["missing_add_me"]
+          #  subStations = ["VR48"]
+          #  stationid = ["missing_add_me"]
 
         #  subStations = ["VR48"]
         #  stationid = ["missing_add_me"]
@@ -385,7 +387,7 @@ def main(surveys, months, CTDConfig):
             projectid = 'missing_project_id_add_me'
             method = 'Saiv CTD s/n 1330'
             projectname = 'OKOKYST Norskehavet Soer'
-            subStations = ["VT71"] #, "VR51"]
+            subStations = ["VT71", "VR51"]
             stationid = ["missing_add_me", "missing_add_me"]
 
         if CTDConfig.survey == "Aqua_kompetanse":
@@ -480,9 +482,9 @@ if __name__ == "__main__":
 
     # surveys = ["Sognefjorden"]
     # "Hardangerfjorden","MON"
-    surveys = ["Hardangerfjorden", "Sognefjorden", "MON", "Aqua_kompetanse", "RMS"]
-    surveys = ["RMS","Aqua_kompetanse","Sognefjorden"]
-    surveys=["Hardangerfjorden", ]
+    surveys = ["Hardangerfjorden", "Sognefjorden", "Aqua_kompetanse", "RMS"]
+  #  surveys = ["Sognefjorden"]
+   # surveys=["RMS"]
 
     months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
 

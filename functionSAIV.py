@@ -7,11 +7,12 @@ import zipfile
 from datetime import datetime
 from io import StringIO
 from pathlib import Path
+import dateutil.parser
 
 import numpy as np
 import pandas as pd
 from netCDF4 import date2num, num2date
-
+import string
 
 def _basename(fname):
     """Return file name without path."""
@@ -256,6 +257,14 @@ def from_btl(fname):
     setattr(df, "_metadata", metadata)
     return df
 
+def try_parsing_date(stringtime):
+    for fmt in ('%d.%m.%Y %H:%M:%S','%Y-%m-%d %H.%M.%S', '%d.%m.%Y %H.%M.%S', '%d/%m/%Y %H.%M.%S',\
+                '%Y-%m-%d %H:%M:%S', '%d/%m/%Y %H:%M:%S'):
+        try:
+            return datetime.strptime(stringtime, fmt)
+        except ValueError:
+            pass
+    raise ValueError('no valid date format found')
 
 def _parse_saiv(lines, sep=";", ftype="saiv"):
     metadata = {}
@@ -286,8 +295,11 @@ def _parse_saiv(lines, sep=";", ftype="saiv"):
                 break
         if counter == 2:
             l = line.split(separator)
-            time = l[date_index] + ' ' + l[time_index]
-            datetime.strptime(time, "%d.%m.%Y %H.%M.%S")
+            time = l[date_index] + ' ' + l[time_index].strip().replace(".",":")
+            try:
+                self.try_parsing_date(time)
+            except:
+                print(f"Could not find proper time format for {time}")
             skiprows = counter
 
         if counter > 2:
@@ -311,6 +323,39 @@ def calculate_julianday(d):
     # Calculate the julian date from the current datetime format (Norwegian time and date format)
     return date2num(d, units="days since 1948-01-01 00:00:00", calendar="standard")
 
+def pressure_to_depth(P, lat):
+    """Compute depth from pressure and latitude
+    Usage: depth(P, lat)
+    Input:
+        P = Pressure,     [dbar]
+        lat = Latitude    [deg]
+    Output:
+        Depth             [m]
+    Algorithm: UNESCO 1983
+    """
+
+    # Use numpy for trigonometry if present
+    from numpy import sin, pi
+
+    a1 =  9.72659
+    a2 = -2.2512e-5
+    a3 =  2.279e-10
+    a4 = -1.82e-15
+
+    b  =  1.092e-6
+
+    g0 =  9.780318
+    g1 =  5.2788e-3
+    g2 =  2.36e-5
+
+    rad = pi / 180.
+
+    X = sin(lat*rad)
+    X = X*X
+    grav = g0 * (1.0 + (g1 + g2*X)*X) + b*P
+    nom = (a1 + (a2 + (a3 + a4*P)*P)*P)*P
+
+    return nom / grav
 
 def from_saiv(fname):
     """
@@ -342,12 +387,9 @@ def from_saiv(fname):
 
     # Get row types, see what you have: avg, std, min, max or just avg, std.
     rowtypes = df[df.columns[-1]].unique()
-    # Get times and dates which occur on second line of each bottle.
-    #  dates = df.iloc[:: len(rowtypes), 1].reset_index(drop=True)
-    #  times = df.iloc[1 :: len(rowtypes), 1].reset_index(drop=True)
-    datetimes = df["Date"] + " " + df["Time"]
+    datetimes = df["Date"].str.strip() + " " + df["Time"].str.replace(".",":", regex=True)
+    df["Date"] = pd.to_datetime(datetimes)
 
-    df["Date"] = pd.to_datetime(datetimes, format="%d.%m.%Y %H.%M.%S")
     df['Depth2'] = df['Depth']
 
     # Fill the Date column with datetimes.
